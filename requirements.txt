@@ -2,4 +2,3 @@ adsputils==1.5.2
 Jinja2==3.1.1
 openpyxl==3.0.9
 pandas==1.4.2
-requests==2.20.0
