@@ -16,13 +16,14 @@ OUTPUT_DIRECTORY = '/tmp/reports'
 # ============================= APPLICATION ==================================== #
 # 
 # Collections we are reporting on
-COLLECTIONS = ['AST', 'HP', 'PS', 'HP_AST', 'PS_AST', 'CORE', 'ES', 'OA']
+COLLECTIONS = ['CORE_AST', 'AST', 'HP', 'PS', 'HP_AST', 'PS_AST', 'CORE', 'ES', 'OA']
 # Report formats supported
 FORMATS = ['NASA', 'CURATORS', 'MISSING']
 # Report types supported
 SUBJECTS = ['FULLTEXT', 'REFERENCES', 'SUMMARY', 'METADATA']
 # Which journals are we reporting on per collection
 JOURNALS = {
+    'CORE_AST':['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','NatAs','PASP'],
     'AST': ['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','ARep','AsBio','AstL','CeMDA','FrASS','Galax','GeCoA','IAUS','IJAsB','JCAP','MNRAS','NatAs','PASA','PASJ','PASP','RAA','RNAAS','SCPMA','Univ','ASPC'],
     'PS': ["AREPS","ASTRA","AdSpR","AnGeo","Ap&SS","AsBio","CeMDA","E&PSL","EM&P","GeCoA","IJAsB","Icar","JAtS",
            "JGRA","JGRD","JGRE","M&PS","M&PSA","Metic","NatGe","P&SS","PEPI","RvGeo","SSRv","SoSyR","SoPh",

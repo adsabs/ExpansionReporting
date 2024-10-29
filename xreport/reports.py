@@ -498,17 +498,14 @@ class ReferenceMatchingReport(Report):
         """
         for journal in self.journals:
             cov_dict = {}
-            matched = unmatched = 0
             # For each volume of the journals in the collection we retrieve that reference matching level
             for volume in sorted(self.statsdata[journal]['pubdata'].keys()):
                 try:
                     ok, fail = self._process_one_volume(journal, volume, rtype)
                 except:
                     ok = fail = 0
-                matched += ok
-                unmatched += fail
                 try:
-                    frac = 100*float(matched)/float(unmatched+matched)
+                    frac = 100*float(ok)/float(ok+fail)
                 except:
                     frac = 0.0
                 if journal in self.config.get("YEAR_IS_VOL"):
