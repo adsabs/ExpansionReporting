@@ -133,7 +133,7 @@ class Report(object):
             outputdata = []
             outputdata += header
             # Generate the name of the output file, including full path
-            output_file = "{0}/{1}_{2}_{3}.xlsx".format(outdir, subject.lower(), collection, self.dstring)
+            output_file = "{0}/{1}_{2}_{3}.xlsx".format(outdir, subject.lower(), collection.replace(' ','_'), self.dstring)
             # Statistics are reported per volume for each journal in the collection
             for vol in range(1, maxvol+1):
                 row = [str(vol)]
@@ -153,7 +153,7 @@ class Report(object):
             for source in self.config['SOURCES'][subject]:
                 outputdata = []
                 outputdata += header
-                output_file = "{0}/{1}_{2}_{3}_{4}.xlsx".format(outdir, subject.lower(), source, collection, self.dstring)
+                output_file = "{0}/{1}_{2}_{3}_{4}.xlsx".format(outdir, subject.lower(), source, collection.replace(' ','_'), self.dstring)
                 for vol in range(1, maxvol+1):
                     row = [str(vol)] + [self.statsdata[j][source].get(vol,"") for j in self.journals]
                     outputdata.append(row)

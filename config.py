@@ -1,3 +1,4 @@
+from topic_sets import TOPIC_SETS
 # ============================= LOGGING ======================================== #
 LOGGING_LEVEL = 'INFO'
 LOG_STDOUT = False
@@ -15,12 +16,20 @@ ADS_PUBLISHER_DATA = "/config/publisher_bibstem.dat"
 OUTPUT_DIRECTORY = '/tmp/reports'
 # ============================= APPLICATION ==================================== #
 # 
-# Collections we are reporting on
-COLLECTIONS = ['CORE_AST', 'AST', 'HP', 'PS', 'HP_AST', 'PS_AST', 'CORE', 'ES', 'OA']
+# Core collections we are reporting on
+CORE_COLLECTIONS = {
+    'AST':'Astronomy and Astrophysics',
+    'HP':'Heliophysics (Solar Physics, Space Weather and Aeronomy)',
+    'PS':'Planetary Science',
+    'ES':'Earth Science',
+    'OA':'Open Access Journals'
+}
+# List containing all collection labels
+COLLECTIONS = list(TOPIC_SETS.keys()) + list(CORE_COLLECTIONS.keys())
 # Report formats supported
 FORMATS = ['NASA', 'CURATORS', 'MISSING']
 # Report types supported
-SUBJECTS = ['FULLTEXT', 'REFERENCES', 'SUMMARY', 'METADATA']
+SUBJECTS = ['FULLTEXT', 'REFERENCES', 'SUMMARY', 'METADATA', 'ALL']
 # Which journals are we reporting on per collection
 JOURNALS = {
     'CORE_AST':['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','NatAs','PASP'],
@@ -29,26 +38,13 @@ JOURNALS = {
            "JGRA","JGRD","JGRE","M&PS","M&PSA","Metic","NatGe","P&SS","PEPI","RvGeo","SSRv","SoSyR","SoPh",
            "SpWea","PSJ","Moon","SpPol"],
     'HP': ['SoPh','SpWea'],
-    'CORE': ['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','ARep','AsBio','ASPC','AstL',
-    'CeMDA','FrASS','Galax','GeCoA','IAUS','IJAsB','JCAP','MNRAS','NatAs','PASA','PASJ','PASP','RAA','RNAAS',
-    'SCPMA','Univ','ApOpt','ARPC','Chaos','Entrp','FrCh','JBO','JEI','JInst','NaPho','NatCC','NatCh','NatEn',
-    'NatMa','NatNa','NatSR','NatSy','OExpr','OptEn','OptL','PCCP','PNAS','RScI','RSPTA','SciA','SPIE','NatCo',
-    'Natur','Sci','AGUA','AmMin','AMT','AnGeo','ARMS','AtmEn','Atmos','AtmRe','BGeo','ChGeo','Clim','E&PSL',
-    'EnGeo','EnST','ESRv','FrEaS','GeoJI','GeoRL','GGG','GMD','JAG','JASTP','JAtS','JGeod','JGRA','JGRB','JGRC',
-    'JGRD','JGRE','JGRF','JGRG','NatGe','PApGe','PEPS','QJRMS','RemS','RvGeo','ScTEn','Senso','Tecto','Tectp',
-    'EFM','ACP','AdSpR','Ap&SS','E&SS','EM&P','EP&S','ESC','ESSD','Icar','JSWSC','M&PS','Metic','Moon','P&SS',
-    'PEPI','PSJ','SoPh','SoSyR','SpPol','SpWea','SSRv','AREPS','AIPC','AnPhy','AnRMS','ApPhA','ApPhB','ApPhL',
-    'ApSS','ARCMP','ARNPS','ChPhC','ChPhL','CoPhC','CP','CPL','CQGra','EL','EPJA','EPJC','EPJD','EPJP','FlDyR',
-    'FoPh','FoPhL','FrMat','FrP','GReGr','IJMPA','IJMPB','IJMPC','IJMPD','IJMPE','JAP','JChPh','JCoPh','JFM',
-    'JHEP','JMoSp','JMoSt','JPCA','JPhA','JPhB','JPhD','JPhG','JPlPh','JQSRT','LRR','MPLA','MPLB','NatPh','NatRP',
-    'NIMPA','NIMPB','NJPh','NuPhA','NuPhB','Parti','PDU','PhFl','PhLA','PhLB','PhPl','PhR','PhRvA','PhRvB','PhRvC',
-    'PhRvD','PhRvE','PhRvF','PhRvL','PhRvP','PhRvR','PhRvX','PhyA','PhyB','PhyC','PPCF','PPN','PrPNP','PTEP','RPPh',
-    'RvMP','ScPP','SSCom','SurSc','SurSR'],
     'HP_AST': ["ApJ","ApJL","ApJS","AJ","MNRAS","A&A","A&AS"],
     'PS_AST': ["ApJ","ApJL","ApJS","AJ","MNRAS","A&A","A&AS"],
     'ES': ['AREPS', 'AmJS.', 'AmMin', 'ApGC.', 'AsBio', 'BAAPG', 'BCaPG', 'BVol.', 'Borea', 'BuSSA', 'CCM..', 'CG...', 'CaJES', 'CaMin', 'ChGeo', 'ClMin', 'CliPa', 'CoMP.', 'E&PSL', 'EEGeo', 'EJMin', 'EOSTr', 'ESPL.', 'ESRv.', 'Earth', 'EcGeo', 'Eleme', 'EnG', 'EnGeo', 'EngGe', 'ExMG', 'GBioC', 'GEEA', 'GGG', 'GGR', 'GPC..', 'GSAB.', 'GSASP', 'GSLSP', 'Gbio', 'GeCoA', 'Geo..', 'GeoJI', 'GeoM.', 'GeoRL', 'GeoRu', 'Geode', 'Geomo', 'Geop.', 'Geosp', 'GrWat', 'HESS', 'HyPr.', 'IGRv.', 'IJCG', 'IJEaS', 'IJRMM', 'Icar.', 'JCExp', 'JCHyd', 'JEEG', 'JForR', 'JG...', 'JGR..', 'JGRA', 'JGRB', 'JGRC', 'JGRD', 'JGRE', 'JGRF', 'JGRG', 'JGeEd', 'JHyd.', 'JMetG', 'JPal.', 'JPet.', 'JPetG', 'JQS..', 'JSG..', 'JSedR', 'JVGR.', 'JVPal', 'LeaEd', 'Litho', 'Lsphe', 'M&PS.', 'MGeol', 'MatGs', 'Micpl', 'MinDe', 'MinM.', 'NatGe', 'Natur', 'OrGeo', 'PApGe', 'PCM..', 'PEPI.', 'PGeo', 'PPP', 'PalAB', 'PalOc', 'Palai', 'Palgy', 'Paly', 'Pbio', 'PreR.', 'QJEGH', 'QuRes', 'RvGeo', 'RvMG.', 'SSASJ', 'Sci..', 'SedG.', 'Sedim', 'Tecto', 'Tectp', 'WRR..'],
     'OA':['PSJ','RSOS','JApA','NatAs','Univ','Galax','AdAst','OJAp','OAJ']
 }
+# Add the special collections to the core journal sets
+JOURNALS.update(TOPIC_SETS)
 # For some collection we define filters (to e.g. get the right content from multidisciplinary journals)
 COLLECTION_FILTERS = {
     'HP_AST':'keyword:"sun*"',
