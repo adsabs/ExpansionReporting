@@ -65,7 +65,7 @@ def _do_query(conf, params, endpoint='search/query'):
     param: params: idctionary with query parameters
     """
     headers = {}
-    headers["Authorization"] = "Bearer:{}".format(conf['ADS_API_TOKEN'])
+    headers["Authorization"] = "Bearer {}".format(conf['ADS_API_TOKEN'])
     headers["Accept"] = "application/json"
     if isinstance(params, str):
         url = "{}/{}/{}".format(conf['ADS_API_URL'], endpoint, params)
