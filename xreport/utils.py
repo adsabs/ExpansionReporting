@@ -75,10 +75,10 @@ def _do_query(conf, params, endpoint='search/query'):
     try:
         r = requests.get(url, headers=headers)
     except Exception as err:
-        logger.error("Search API request failed: {}".format(err))
+        logger.error("Search API request failed: {}: {}".format(err, url))
         raise
     if not r.ok:
-        msg = "Search API request with error code '{}'".format(r.status_code)
+        msg = "Search API request with error code '{}': {}".format(r.status_code, url)
         logger.error(msg)
         raise Exception(msg)
     else:
@@ -218,8 +218,12 @@ def _get_journal_coverage(conf, jrnl):
     param: conf: dictionary with configuration values
     param: jrnl: a journal abbreviation (bibstem)
     """
+    try:
+        data = _do_query(conf, jrnl.replace('.',''), endpoint='journals/summary')
+        completeness_data = data['summary']['master']['completeness_details']['completeness_by_volume']
+    except:
+        logger.error('No completeness data found for: {0}'.format(jrnl))
+        completeness_data = {}
 
-    data = _do_query(conf, jrnl, endpoint='journals/summary')
-    
-    return data
+    return completeness_data
     

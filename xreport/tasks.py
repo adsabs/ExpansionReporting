@@ -23,11 +23,16 @@ def create_report(**args):
     collection = args['collection']
     # What report needs to be created
     subject = args['subject']
+    # Do we report by volume or year?
+    use_year = args['use_year']
     #
     if subject in ['FULLTEXT', 'ALL']:
         # Initialize the class for full text reporting
         ftreport = FullTextReport()
+        # Set the reporting type
+        ftreport.use_year = use_year
         # The first step consists of retrieving and preparing the data to generate the report
+        ftreport.make_report(collection, report_format)
         try:
             ftreport.make_report(collection, report_format)
         except Exception as err:
@@ -45,20 +50,24 @@ def create_report(**args):
     if subject in ['REFERENCES', 'ALL']:
         # Initialize the class for reference matching reporting
         rmreport = ReferenceMatchingReport()
+        # Set the reporting type
+        rmreport.use_year = use_year
         try:
-            rmreport.make_report(collection, report_format)
+            rmreport.make_report(collection, 'general')
         except Exception as err:
             msg = "Error making reference matching report for collection '{0}' in format '{1}': {2}".format(collection, report_format, err)
             logger.error(msg)
         # Write the report to file
         try:
-            rmreport.save_report(collection, report_format, subject)
+            rmreport.save_report(collection, 'general', subject)
         except Exception as err:
             msg = "Error saving reference matching report for collection '{0}' in format '{1}': {2}".format(collection, report_format, err)
             logger.error(msg)
     if subject in ['METADATA', 'ALL']:
         # Initialize the class for metadata reporting
         mreport = MetaDataReport()
+        # Set the reporing type
+        mreport.use_year = use_year
         try:
             mreport.make_report(collection, report_format)
         except Exception as err:
@@ -73,6 +82,8 @@ def create_report(**args):
     if subject == 'SUMMARY':
         # Create a summarizing report
         summary = SummaryReport()
+        # Set the reporting type
+        summary.use_year = use_year
         try:
             summary.make_report(collection, report_format)
         except Exception as err:

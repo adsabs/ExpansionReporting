@@ -31,6 +31,8 @@ class Report(object):
                                 attach_stdout=self.config.get('LOG_STDOUT', False))
         # The names of output files will have a date string in them
         self.dstring = datetime.today().strftime('%Y%m%d')
+        now = datetime.now()
+        self.current_year = now.year
     # ============================= MAIN FUNCTIONALITY ================================ #
     def make_report(self, collection, report_type):
         """
@@ -117,6 +119,10 @@ class Report(object):
         # Make sure the directory exists
         if not os.path.exists(outdir):
             os.mkdir(outdir)
+        # See if we can get a WoS subject for collection (if the collection is a "topic")
+        # We will keep the collection name if no such mapping is found
+        ## fname = config.get('ASJC2WOS').get(collection, collection)
+        fname = collection
         # Transform the data generated in the make_report method:
         # generate a data structure so that we can create a Pandas frame
         header = []
@@ -128,18 +134,29 @@ class Report(object):
         header.append(['start vol ->'] + [str(self.statsdata[j]['startvol']) for j in self.journals])
         header.append(['last vol ->'] + [str(self.statsdata[j]['lastvol']) for j in self.journals])
         #
-        maxvol = max([e['lastvol'] for e in self.statsdata.values()])
-        if report_type == 'NASA':
+        try:
+            maxvol = max([int(e['lastvol']) for e in self.statsdata.values()])
+        except:
+            maxvol = 1
+        if report_type in ['NASA','general']:
             outputdata = []
             outputdata += header
             # Generate the name of the output file, including full path
-            output_file = "{0}/{1}_{2}_{3}.xlsx".format(outdir, subject.lower(), collection.replace(' ','_'), self.dstring)
-            # Statistics are reported per volume for each journal in the collection
-            for vol in range(1, maxvol+1):
-                row = [str(vol)]
+            if self.use_year:
+                output_file = "{0}/{1}_{2}_{3}.year.xlsx".format(outdir, subject.lower(), fname.replace(' ','_'), self.dstring)
+            else:
+                output_file = "{0}/{1}_{2}_{3}.volume.xlsx".format(outdir, subject.lower(), fname.replace(' ','_'), self.dstring)
+            # Statistics are reported per volume or year for each journal in the collection
+            if self.use_year:
+                data_keys = range(self.use_year, self.current_year+1)
+            else:
+                data_keys = range(1, maxvol+1)
+            for data_key in data_keys:
+                row = [str(data_key)]
                 for jrnl in self.journals:
-                    if vol in self.statsdata[jrnl]['general']:
-                        row.append(self.statsdata[jrnl]['general'][vol])
+                    if str(data_key) in self.statsdata[jrnl]['general']:
+                        perc = round(100*self.statsdata[jrnl]['general'][str(data_key)],1)
+                        row.append(perc)
                     else:
                         row.append("")
                 outputdata.append(row)
@@ -153,9 +170,16 @@ class Report(object):
             for source in self.config['SOURCES'][subject]:
                 outputdata = []
                 outputdata += header
-                output_file = "{0}/{1}_{2}_{3}_{4}.xlsx".format(outdir, subject.lower(), source, collection.replace(' ','_'), self.dstring)
-                for vol in range(1, maxvol+1):
-                    row = [str(vol)] + [self.statsdata[j][source].get(vol,"") for j in self.journals]
+                if self.use_year:
+                    output_file = "{0}/{1}_{2}_{3}_{4}.year.xlsx".format(outdir, subject.lower(), source, fname.replace(' ','_'), self.dstring)
+                else:
+                    output_file = "{0}/{1}_{2}_{3}_{4}.volume.xlsx".format(outdir, subject.lower(), source, fname.replace(' ','_'), self.dstring)
+                if self.use_year:
+                    data_keys = range(self.use_year, self.current_year+1)
+                else:
+                    data_keys = range(1, maxvol+1)
+                for data_key in data_keys:
+                    row = [str(data_key)] + [self.statsdata[j][source].get(str(data_key),"") for j in self.journals]
                     outputdata.append(row)
                 if outputdata:
                     output_frame = pd.DataFrame(outputdata)
@@ -241,9 +265,12 @@ class Report(object):
                 self.statsdata[journal]['startvol'] = min(art_dict.keys())
             except:
                 continue
-            # The number of publications per volume, to be used later
+            # The number of publications per volume or year, to be used later
             # for normalization
-            self.statsdata[journal]['pubdata'] = art_dict
+            if self.use_year:
+                self.statsdata[journal]['pubdata'] = year_dict
+            else:
+                self.statsdata[journal]['pubdata'] = art_dict
     #
     def _get_skip_volumes(self):
         """
@@ -300,43 +327,9 @@ class FullTextReport(Report):
     """
     def __init__(self, config={}):
         """
-        Initializes the class and prepares a (temporary) lookup facility for
-        curators reporting. This lookup facility will be replaced by an API
-        query eventually
+        Initializes the class
         """
         super(FullTextReport, self).__init__(config=config)
-        # ============================= AUGMENTATION of parent method ================================ #
-        fulltext_links = self.config.get("CLASSIC_FULLTEXT_INDEX")
-        # Compile a list of journals to generate the lookup facility for
-        include = [element for sublist in self.config.get("JOURNALS").values() for element in sublist]
-        # This variable will hold the data to generate the Pandas frame
-        data = []
-        # Gather all required data. The Pandas data frame will allow the following query:
-        # provide all full text sources for a given journal and volume combination, from which will
-        # follow how many records have full text from arXiv and how many from the publisher (which
-        # are the numbers we are after)
-        with open(fulltext_links) as fh:
-            for line in fh:
-                bibcode, ftfile, source = line.strip().split('\t')
-                bibstem = bibcode[4:9]
-                if bibstem not in include:
-                    continue
-                # Since we report per journal volume, we do not want tmp bibcodes
-                if bibcode[9:13].replace('.','') == 'tmp':
-                    continue
-                try:
-                    volume  = int(bibcode[9:13].replace('.',''))
-                except:
-                    self.logger.info("Processing Classic fulltext index. Cannot get volume for: {0}. Skipping...".format(bibcode))
-                    continue
-                if bibstem in self.config.get("YEAR_IS_VOL"):
-                    volume = int(bibcode[0:4])
-                letter  = bibcode[13]
-                if bibstem == 'ApJ..' and letter == 'L':
-                    bibstem = 'ApJL'
-                data.append([bibstem, volume, source.lower()])
-        # The lookup facility is a Pandas dataframe
-        self.ft_index = pd.DataFrame(data, columns=['bibstem','volume','source'])
 
     def make_report(self, collection, report_type):
         """
@@ -347,9 +340,11 @@ class FullTextReport(Report):
         # ============================= AUGMENTATION of parent method ================================ #
         # Different report types result in different reports. Specifically, for full text,
         # for external reporting only the fact that there is full text is reported.
-        if report_type == "NASA":
+        if report_type == "general":
             self._get_fulltext_data_general()
-        elif report_type == "CURATORS":
+        elif report_type == "curators":
+            # First generate a full tex index
+            self._get_fulltext_index()
             self._get_fulltext_data_classic('publisher')
             self._get_fulltext_data_classic('arxiv')
         else:
@@ -365,6 +360,53 @@ class FullTextReport(Report):
         """
         super(FullTextReport, self).save_report(collection, report_type, subject)
 
+    def _get_fulltext_index(self):
+        """
+        Initializes the class and prepares a (temporary) lookup facility for
+        curators reporting. This lookup facility will be replaced by an API
+        query eventually
+        """
+        fulltext_links = self.config.get("CLASSIC_FULLTEXT_INDEX")
+        # Compile a list of journals to generate the lookup facility for
+        include = [element for sublist in self.config.get("JOURNALS").values() for element in sublist]
+        # This variable will hold the data to generate the Pandas frame
+        data = []
+        # Name of the coumn in the Pandas data frame that stores the "key"
+        if self.use_year:
+            key_column = 'year'
+        else:
+            key_column = 'volume'
+        # Gather all required data. The Pandas data frame will allow the following query:
+        # provide all full text sources for a given journal and volume combination, from which will
+        # follow how many records have full text from arXiv and how many from the publisher (which
+        # are the numbers we are after)
+        with open(fulltext_links) as fh:
+            for line in fh:
+                bibcode, ftfile, source = line.strip().split('\t')
+                bibstem = bibcode[4:9]
+                if bibstem not in include:
+                    continue
+                # If we report per journal volume, we do not want tmp bibcodes
+                if bibcode[9:13].replace('.','') == 'tmp' and not self.use_year:
+                    continue
+                # Whether we report by year or volume, we use the same variable
+                try:
+                    if self.use_year:
+                        data_key = int(bibcode[0:4])
+                    else:
+                        data_key  = int(bibcode[9:13].replace('.',''))
+                except:
+                    self.logger.info("Processing Classic fulltext index. Cannot get year or volume for: {0}. Skipping...".format(bibcode))
+                    continue
+                if bibstem in self.config.get("YEAR_IS_VOL") and not self.use_year:
+                    data_key = int(bibcode[0:4])
+                letter  = bibcode[13]
+                if bibstem == 'ApJ..' and letter == 'L':
+                    bibstem = 'ApJL'
+                data.append([bibstem, data_key, source.lower()])
+        # The lookup facility is a Pandas dataframe
+        self.ft_index = pd.DataFrame(data, columns=['bibstem',key_column,'source'])
+        
     def _get_fulltext_data_general(self):
         """
         For a set of journals, get full text data (the number of records with full text per volume)
@@ -374,13 +416,16 @@ class FullTextReport(Report):
         for journal in self.journals:
             # The ADS query to retrieve all records with full text for a given journal
             # Filters:
-            # fulltext_mtime --> get all records with full text indexed
-            # doctype:article --> remove all records indexed as non-articles
+            # has:body --> get all records with full text indexed
+            # doctype:(article OR inproceedings) --> remove all records indexed as non-articles
             # author_count:[1 TO *] --> not a good idea (because some historical publications don't have an author)
             # entdate:[* TO NOW-40DAYS] --> not a good idea in case records get re-indexed
-            query = 'bibstem:"{0}" fulltext_mtime:["1000-01-01t00:00:00.000Z" TO *] doctype:(article OR inproceedings)'.format(journal)
+            query = 'bibstem:"{0}" has:body doctype:(article OR inproceedings)'.format(journal)
             # The query populates a dictionary keyed on volume number, listing the number of records per volume
-            full_dict = _get_facet_data(self.config, query, 'volume')
+            if self.use_year:
+                full_dict = _get_facet_data(self.config, query, 'year')
+            else:
+                full_dict = _get_facet_data(self.config, query, 'volume')
             # Coverage data is stored in a dictionary
             cov_dict = {}
             # Collect volumes to be skipped, if any
@@ -388,16 +433,16 @@ class FullTextReport(Report):
                 skip = self.skip_fulltext[journal]
             except:
                 skip = []
-            for volume in sorted(self.statsdata[journal]['pubdata'].keys()):
-                if volume in skip:
+            for data_key in sorted(self.statsdata[journal]['pubdata'].keys()):
+                if data_key in skip:
                     continue
                 try:
-                    frac = 100*float(full_dict[volume])/float(self.statsdata[journal]['pubdata'][volume])
+                    frac = float(full_dict[data_key])/float(self.statsdata[journal]['pubdata'][data_key])
                 except:
                     frac = 0.0
-                if journal in self.config.get("YEAR_IS_VOL"):
-                    volume = volume - self.config.get("YEAR_IS_VOL")[journal] + 1
-                cov_dict[volume] = round(frac,1)
+                if journal in self.config.get("YEAR_IS_VOL") and not self.use_year:
+                    data_key = data_key - self.config.get("YEAR_IS_VOL")[journal] + 1
+                cov_dict[str(data_key)] = frac
             # Update the global statistics data structure
             self.statsdata[journal]['general'] = cov_dict
 
@@ -408,6 +453,7 @@ class FullTextReport(Report):
         
         param: source: source of fulltext
         """
+        self.journals = ['ApJ','A&A','MNRAS']
         for journal in self.journals:
             # Coverage data is stored in a dictionary
             cov_dict = {}
@@ -416,27 +462,33 @@ class FullTextReport(Report):
                 skip = self.skip_fulltext[journal]
             except:
                 skip = []
-            for volume in sorted(self.statsdata[journal]['pubdata'].keys()):
-                if volume in skip:
+            for data_key in sorted(self.statsdata[journal]['pubdata'].keys()):
+                if data_key in skip:
                     continue
                 # For each volume of the journals in the collection we query the Pandas dataframe to retrieve the sources of full text
                 if ft_source == 'arxiv':
                     # How many records are there with full text from arXiv?
-                    data = self.ft_index.query("bibstem=='{0}' and volume=={1} and source=='arxiv'".format(journal, volume))
+                    if self.use_year:
+                        data = self.ft_index.query("bibstem=='{0}' and year=={1} and source=='arxiv'".format(journal, data_key))
+                    else:
+                        data = self.ft_index.query("bibstem=='{0}' and volume=={1} and source=='arxiv'".format(journal, data_key))
                 else:
-                    data = self.ft_index.query("bibstem=='{0}' and volume=={1} and source!='arxiv'".format(journal, volume))
+                    if self.use_year:
+                        data = self.ft_index.query("bibstem=='{0}' and year=={1} and source!='arxiv'".format(journal, data_key))
+                    else:
+                        data = self.ft_index.query("bibstem=='{0}' and volume=={1} and source!='arxiv'".format(journal, data_key))
                 try:
                     sources = data['source'].tolist()
                 except Exception as err:
-                    self.logger.error('Source lookup in Classic index blew up for journal {0}, volume {1}: {2}'.format(journal, volume, err))
+                    self.logger.error('Source lookup in Classic index blew up for journal {0}, year/volume {1}: {2}'.format(journal, data_key, err))
                     sources = []
                 try:
-                    frac = 100*float(len(sources))/float(self.statsdata[journal]['pubdata'][volume])
+                    frac = float(len(sources))/float(self.statsdata[journal]['pubdata'][data_key])
                 except:
                     frac = 0.0
-                if journal in self.config.get("YEAR_IS_VOL"):
-                    volume = volume - self.config.get("YEAR_IS_VOL")[journal] + 1
-                cov_dict[volume] = round(frac,1)
+                if journal in self.config.get("YEAR_IS_VOL") and not self.use_year:
+                    data_key = data_key - self.config.get("YEAR_IS_VOL")[journal] + 1
+                cov_dict[str(data_key)] = round(100*frac,1)
             self.statsdata[journal][ft_source] = cov_dict
 
     def _get_missing_publications(self):
@@ -445,7 +497,7 @@ class FullTextReport(Report):
         """
         for journal in self.journals:
             # The ADS query to retrieve all records without full text for a given journal
-            query = 'bibstem:"{0}"  -fulltext_mtime:["1000-01-01t00:00:00.000Z" TO *] doctype:(article OR inproceedings)'.format(journal)
+            query = 'bibstem:"{0}"  -has:body doctype:(article OR inproceedings)'.format(journal)
             missing_pubs = _get_records(self.config, query, 'bibcode,doi,title,first_author_norm,volume,issue')
             self.missing[journal] = missing_pubs
 
@@ -471,14 +523,10 @@ class ReferenceMatchingReport(Report):
         """
         super(ReferenceMatchingReport, self).make_report(collection, report_type)
         # ============================= AUGMENTATION of parent method ================================ #
-        # Different report types result in different reports.
-        if report_type == "NASA":
-            self._get_reference_data('general')
-        elif report_type == "CURATORS":
-            self._get_reference_data('publisher')
-            self._get_reference_data('crossref')
-        else:
-            sys.stderr.write('Report type {0} is currently not available for references\n'.format(report_type))
+        # Gather reference data necessary for the report
+        self._get_reference_data()
+        # Generate the matching statistics
+        self._get_reference_stats()
 
     def save_report(self, collection, report_type, subject):
         """
@@ -490,80 +538,33 @@ class ReferenceMatchingReport(Report):
         """
         super(ReferenceMatchingReport, self).save_report(collection, report_type, subject)
 
-    def _get_reference_data(self, rtype):
+    def _get_reference_data(self):
+        """
+        Retrieve the data required to generate the matching statistics
+        """
+        if self.use_year:
+            # We are reporting by year, so retrieve reference data aggregated by year
+            reference_data_file = "{0}/{1}".format(self.config["ADS_REFERENCE_DATA"],self.config["ADS_REFERENCE_STATS_YEAR"])
+        else:
+            # We are reporting by volume, so retrieve reference data aggregated by volume
+            reference_data_file = "{0}/{1}".format(self.config["ADS_REFERENCE_DATA"],self.config["ADS_REFERENCE_STATS_VOLUME"])
+        # Read reference data into a Pandas data frame
+        self.reference_stats = pd.read_csv(reference_data_file, sep='\t')
+
+    def _get_reference_stats(self):
         """
         For a set of journals, get reference matching statistics
-        
-        param: rtype: determines whether Crossref reference data should be included
         """
-        for journal in self.journals:
-            cov_dict = {}
-            # For each volume of the journals in the collection we retrieve that reference matching level
-            for volume in sorted(self.statsdata[journal]['pubdata'].keys()):
-                try:
-                    ok, fail = self._process_one_volume(journal, volume, rtype)
-                except:
-                    ok = fail = 0
-                try:
-                    frac = 100*float(ok)/float(ok+fail)
-                except:
-                    frac = 0.0
-                if journal in self.config.get("YEAR_IS_VOL"):
-                    volume = volume - self.config.get("YEAR_IS_VOL")[journal] + 1
-                cov_dict[volume] = round(frac,1)
-            self.statsdata[journal][rtype] = cov_dict
-
-    def _process_one_volume(self, jrnl, volno, source):
-        """
-        For a particular volume of a given journal, find the results files generated
-        by the reference resolver and tally how many references were successfully and
-        not successfully matched to ADS records
-        
-        param: jrnl: bibstem
-        param: volno: journal volume number
-        param: source: source of reference data
-        """
-        # Root directory for reference data
-        basedir = self.config['ADS_REFERENCE_DATA']
-        # Transform journal bibstem to conform with reference data conventions
-        jrnl = jrnl.replace('.','').replace('&','+')
-        # Transform volume number to conform with reference data conventions
-        vol = str(volno).zfill(4)
-        # Some idiosyncracies for A&A reference data
-        if jrnl == 'A+A' and int(vol) < 317:
-            jrnl = 'A&A'
-        if jrnl == 'A+AS' and int(vol) < 121:
-            jrnl = 'A&AS'
-        # Where are reference data located?
-        voldir = "%s/%s/%s" % (basedir,jrnl,vol)
-        # Special treatment for ApJL
-        if jrnl == 'ApJL' and (int(vol) > 888 or int(vol) < 474):
-           voldir = "%s/ApJ/%s" % (basedir, vol)
-           resfiles = [f for f in glob.glob(voldir+'/*' + '.result') if os.path.basename(f)[13] == 'L']
+        if self.use_year:
+            key_column = 'year'
         else:
-           resfiles = glob.glob(voldir+'/*' + '.result')
-        if source == 'publisher':
-            resfiles = [f for f in resfiles if not f.endswith('.xref.xml.result')]
-        elif source == 'crossref':
-            resfiles = [f for f in resfiles if f.endswith('.xref.xml.result')]
-        fail = ok =  0
-        # Now go through all the resolver results files
-        # Every entry in the results files has a score of 0 or 5, if no match was found,
-        # or 1, if a match was found successfully
-        for resfile in resfiles:
-            with open(resfile) as refdata:
-                for line in refdata:
-                        try:
-                            score = str(line.strip()[0])
-                        except:
-                            continue
-                        if score in ['0','5']:
-                            fail += 1
-                        elif score == '1':
-                            ok += 1
-                        else:
-                            continue
-        return [ok, fail]
+            key_column = 'volume'
+        for journal in self.journals:
+            # The data keys are either volumes or years, depending on our choice
+            data_keys = sorted(self.statsdata[journal]['pubdata'].keys())
+            results = self.reference_stats[self.reference_stats['bibstem'] == journal]
+            res_dict = dict(zip(results[key_column], results['fraction']))
+            self.statsdata[journal]['general'] = {str(key): value for key, value in res_dict.items()}
 
 class MetaDataReport(Report):
     """
@@ -609,19 +610,40 @@ class MetaDataReport(Report):
             else:
                 cov_data = _get_journal_coverage(self.config, journal)
             cov_dict = {}
-            jdata = {}
-            try:
-                cdata = eval(cov_data['summary']['master'].get('completeness_details',[]))
-            except:
-                cdata = {}
-            # Get the completeness stats from the results
-            for entry in cdata:
-                jdata[entry['volume']] = round(100*entry['completeness_fraction'], 1)
-            for volume in sorted(self.statsdata[journal]['pubdata'].keys()):
-                if letter:
-                    cov_dict[volume] = jdata.get(str(volume)+"L",0)
+            for entry in cov_data:
+                if self.use_year:
+                    try:
+                        year = int(entry['year'])
+                    except:
+                        self.logger.warning('Found strange year while getting metadata stats for {}: {}'.format(journal,entry['year']))
+                        year = entry['year']
+                    
+                    compl_data = [(v['ADS_records'], v['Crossref_records'], v['volume']) for v in entry['volumes']]
+                    
+                    if letter:
+                        compl_data = [e for e in compl_data if e[2].endswith('L')]
+                    else:
+                        compl_data = [e for e in compl_data if not e[2].endswith('L')]
+                    
+                    try:
+                        frac = float(sum([e[0] for e in compl_data]))/float(sum([e[1] for e in compl_data]))
+                    except:
+                        frac = 0.0
+                    
+                    cov_dict[str(year)] = frac
                 else:
-                    cov_dict[volume] = jdata.get(str(volume),0)
+                    for v in entry['volumes']:
+                        volno = v['volume']
+                        if letter and volno.endswith('L'):
+                            try:
+                                cov_dict[volno.replace('L','')] = float(v['ADS_records'])/float(v['Crossref_records'])
+                            except:
+                                cov_dict[volno.replace('L','')] = 0.0
+                        else:
+                            try:
+                                cov_dict[volno] = float(v['ADS_records'])/float(v['Crossref_records'])
+                            except:
+                                cov_dict[volno] = 0.0
             # Coverage data is stored in a dictionary
             self.statsdata[journal]['general'] = cov_dict
 

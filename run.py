@@ -22,11 +22,15 @@ logger = setup_logging('run.py', proj_home=proj_home,
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-y', '--year', action='store_true',
+                        help='Report by year, rather than volume')
+    parser.add_argument('-sy', '--start-year', default=config.get('DEFAULT_START_YEAR', 1997), type=int, dest='start_year',
+                        help='Set start year, if reporting by year')
     parser.add_argument('-c', '--collection', default='CORE', dest='collection',
                         help='Collection to create report for (accepted values: AST or PS+HP)')
-    parser.add_argument('-f', '--format', default='NASA', dest='format',
+    parser.add_argument('-f', '--format', default='general', dest='format',
                         help='Format of report')
-    parser.add_argument('-s', '--subject', default='ALL', dest='subject',
+    parser.add_argument('-s', '--subject', default=None, dest='subject',
                         help='Subject of the report')
     parser.add_argument('-a', '--all', action='store_true',
                         help='Run all reports on a specific subject, if supplied')
@@ -36,6 +40,10 @@ if __name__ == '__main__':
                         help='List of all collections')
     args = parser.parse_args()
 
+    # Determine the type of reporting: by volume or by year. If by year, set the start year
+    use_year = args.year
+    if args.year:
+        use_year = args.start_year
     if args.list:
         print('Supported core collections:\nlabel\tname')
         for coll, name in config.get('CORE_COLLECTIONS').items():
@@ -46,34 +54,39 @@ if __name__ == '__main__':
         sys.exit()
     if args.collection not in config.get('COLLECTIONS') and not args.all and not args.topics:
         sys.exit('Please specify one of the following values for the collection parameter: {}'.format(config.get('COLLECTIONS')))
+    if args.topics and not args.subject:
+        sys.exit('To run topic stats, please specify one of the following values for the subject parameter: {}'.format(config.get('TOPIC_SUBJECTS')))
     if args.format not in config.get('FORMATS'):
         sys.exit('Please specify one of the following values for the format parameter: {}'.format(config.get('FORMATS')))
-    if args.subject not in config.get('SUBJECTS'):
+    if not args.subject or args.subject not in config.get('SUBJECTS'):
         sys.exit('Please specify one of the following values for the subject parameter: {}'.format(config.get('SUBJECTS')))
+    if args.format.lower() == 'curators' and args.subject.lower() != 'fulltext':
+        sys.exit('The "curators" format only supports the "fulltext" report')
     if args.all:
         for coll in config.get('COLLECTIONS'):
             for subject in ['FULLTEXT', 'REFERENCES','METADATA']:
                 try:
-                    report = tasks.create_report(collection=coll, format=args.format, subject=subject)
+                    report = tasks.create_report(collection=coll, format=args.format, subject=subject, use_year=use_year)
                 except:
                     logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, args.format, coll, error))
                     sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, args.format, coll, error))
     elif args.topics:
         for coll, name in config.get('TOPIC_SETS').items():
-             for subject in ['FULLTEXT', 'REFERENCES','METADATA']:
+            if args.format.lower() != 'curators':
+                try:
+                    report = tasks.create_report(collection=coll, format="general", subject=args.subject, use_year=use_year)
+                except Exception as error:
+                    logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, "general", coll, error))
+                    sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, "general", coll, error))
+            else:
                  try:
-                     report = tasks.create_report(collection=coll, format="NASA", subject=subject)
-                 except:
-                     logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "NASA", coll, error))
-                     sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "NASA", coll, error))
-                 try:
-                     report = tasks.create_report(collection=coll, format="CURATORS", subject=subject)
+                     report = tasks.create_report(collection=coll, format="CURATORS", subject="FULLTEXT", use_year=use_year)
                  except:
                      logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "CURATORS", coll, error))
                      sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "CURATORS", coll, error))
     else:
         try:
-            report = tasks.create_report(collection=args.collection, format=args.format, subject=args.subject)
+            report = tasks.create_report(collection=args.collection, format=args.format, subject=args.subject, use_year=use_year)
         except Exception as error:
             logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, args.format, args.collection, error))
             sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, args.format, args.collection, error))

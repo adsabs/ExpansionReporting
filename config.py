@@ -1,16 +1,19 @@
 from topic_sets import TOPIC_SETS
+from topic_sets import ASJC2WOS
 # ============================= LOGGING ======================================== #
 LOGGING_LEVEL = 'INFO'
 LOG_STDOUT = False
 # ============================= ADS ============================================ #
 ADS_API_TOKEN = "<secret>"
-ADS_API_URL = "https://ui.adsabs.harvard.edu/v1"
+ADS_API_URL = "https://api.adsabs.harvard.edu/v1"
 CLASSIC_FULLTEXT_INDEX = "/tmp/all.links"
 CLASSIC_USAGE_INDEX = {
     'reads':'/tmp/reads.links',
     'downloads':'/tmp/downloads.links'
 }
-ADS_REFERENCE_DATA = "/references/resolved"
+ADS_REFERENCE_DATA = "/references/stats"
+ADS_REFERENCE_STATS_YEAR = "refcounts_aggr_by_year.tsv"
+ADS_REFERENCE_STATS_VOLUME = "refcounts_aggr_by_volume.tsv"
 ADS_PUBLISHER_DATA = "/config/publisher_bibstem.dat"
 # The root of the output location
 OUTPUT_DIRECTORY = '/tmp/reports'
@@ -27,9 +30,10 @@ CORE_COLLECTIONS = {
 # List containing all collection labels
 COLLECTIONS = list(TOPIC_SETS.keys()) + list(CORE_COLLECTIONS.keys())
 # Report formats supported
-FORMATS = ['NASA', 'CURATORS', 'MISSING']
+FORMATS = ['general', 'curators', 'missing']
 # Report types supported
 SUBJECTS = ['FULLTEXT', 'REFERENCES', 'SUMMARY', 'METADATA', 'ALL']
+TOPIC_SUBJECTS = ['FULLTEXT', 'REFERENCES', 'METADATA']
 # Which journals are we reporting on per collection
 JOURNALS = {
     'CORE_AST':['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','NatAs','PASP'],
@@ -93,6 +97,8 @@ SUMMARY_ROWS = {
 # For these collections we need to skip the calculation of usage
 # (because it would involve retrieving all bibcodes)
 SKIP_USAGE = ['HP_AST', 'PS_AST']
+# For reports by publication year, this is the default start year
+DEFAULT_START_YEAR = 1997
 # For these publications (bibstem) the volume is treated as volume. This dictionary lists the start year
 YEAR_IS_VOL = {
     'JCAP':2003
