@@ -49,6 +49,10 @@ JOURNALS = {
 }
 # Add the special collections to the core journal sets
 JOURNALS.update(TOPIC_SETS)
+# Add Astrophysics, Heliophysics and Planetary Science to topic sets
+TOPIC_SETS['Astrophysics'] = JOURNALS['AST']
+TOPIC_SETS['Heliophysics'] = JOURNALS['HP']
+TOPIC_SETS['Planetary Science'] = JOURNALS['PS']
 # For some collection we define filters (to e.g. get the right content from multidisciplinary journals)
 COLLECTION_FILTERS = {
     'HP_AST':'keyword:"sun*"',

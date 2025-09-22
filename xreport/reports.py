@@ -115,10 +115,10 @@ class Report(object):
         param: subject: specification of type data to create report for
         """
         # Where will the report(s) be written to
-        outdir = "{0}/{1}".format(self.config['OUTPUT_DIRECTORY'], report_type)
+        outdir = "{0}/{1}/{2}/{3}".format(self.config['OUTPUT_DIRECTORY'], report_type, collection, subject)
         # Make sure the directory exists
         if not os.path.exists(outdir):
-            os.mkdir(outdir)
+            os.makedirs(outdir)
         # See if we can get a WoS subject for collection (if the collection is a "topic")
         # We will keep the collection name if no such mapping is found
         ## fname = config.get('ASJC2WOS').get(collection, collection)
