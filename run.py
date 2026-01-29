@@ -6,6 +6,9 @@ import os
 
 from xreport import tasks
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 # ============================= INITIALIZATION ==================================== #
 
 from adsputils import setup_logging, load_config
@@ -18,6 +21,11 @@ logger = setup_logging('run.py', proj_home=proj_home,
 
 # =============================== FUNCTIONS ======================================= #
 
+collmap = {
+    'AST':'Astrophysics',
+    'PS': 'Planetary Science',
+    'HP': 'Heliophysics'
+}
 
 if __name__ == '__main__':
 
@@ -86,7 +94,8 @@ if __name__ == '__main__':
                      sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "CURATORS", coll, error))
     else:
         try:
-            report = tasks.create_report(collection=args.collection, format=args.format, subject=args.subject, use_year=use_year)
+            coll = collmap.get(args.collection, args.collection)
+            report = tasks.create_report(collection=coll, format=args.format, subject=args.subject, use_year=use_year)
         except Exception as error:
             logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, args.format, args.collection, error))
             sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, args.format, args.collection, error))

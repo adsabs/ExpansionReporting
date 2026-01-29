@@ -135,3 +135,5 @@ logs/
 
 # Config
 local_config.py
+# Stuff
+scixcoveragereports*.json
