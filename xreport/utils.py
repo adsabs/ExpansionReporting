@@ -5,6 +5,7 @@ import time
 import urllib.request, urllib.parse, urllib.error
 import requests
 import math
+import functools
 from datetime import date
 from adsgcon.gmanager import GoogleManager
 # ============================= INITIALIZATION ==================================== #
@@ -26,6 +27,32 @@ class GoogleManagerException(Exception):
 class FolderIdNotFound(Exception):
     pass
 # =============================== HELPER FUNCTIONS ================================ #
+def retry(tries=4, delay=3, backoff=1):
+    """A so-called decorator function implementing a retry-on-exception functionality"""
+    # tries: the number of attempts to retry
+    # delay: the number of seconds to wait between retries
+    # backoff: a multiplier option (larger than 1 means that wait times increase by this factor)
+    # logger: file handle of log file (None means that messages are written to stdout)
+    def deco_retry(func):
+        @functools.wraps(func)
+        def f_retry(*args, **kwargs):
+            m_tries, m_delay = tries, delay
+
+            while m_tries > 1:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    msg = f"Exception '{e}' while querying API, retrying in {m_delay} seconds..."
+                    logger.warning(msg)
+                    time.sleep(m_delay)
+                    m_tries -= 1
+                    m_delay *= backoff
+
+            return func(*args, **kwargs)
+
+        return f_retry
+    return deco_retry
+
 def _group(lst, n):
     """
     Transform a list of values into a list of tuples of length n
@@ -68,6 +95,7 @@ def _make_dict(tup, key_is_int=True):
         newtup = [(int(re.sub("[^0-9]", "", e[0])), e[1]) for e in tup]        
     return dict(newtup)
 
+@retry(tries=5)
 def _do_query(conf, params, endpoint='search/query'):
     """
     Send of a query to the ADS API (essentially, any API defined by config values)
