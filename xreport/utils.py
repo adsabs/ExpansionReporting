@@ -1,10 +1,12 @@
 import re
 import os
 import sys
+import time
 import urllib.request, urllib.parse, urllib.error
 import requests
 import math
 from datetime import date
+from adsgcon.gmanager import GoogleManager
 # ============================= INITIALIZATION ==================================== #
 
 from adsputils import setup_logging, load_config
@@ -14,6 +16,15 @@ config = load_config(proj_home=proj_home)
 logger = setup_logging(__name__, proj_home=proj_home,
                         level=config.get('LOGGING_LEVEL', 'INFO'),
                         attach_stdout=config.get('LOG_STDOUT', False))
+# Exception definitions
+class GoogleUploadException(Exception):
+    pass
+
+class GoogleManagerException(Exception):
+    pass
+
+class FolderIdNotFound(Exception):
+    pass
 # =============================== HELPER FUNCTIONS ================================ #
 def _group(lst, n):
     """
@@ -227,3 +238,56 @@ def _get_journal_coverage(conf, jrnl):
 
     return completeness_data
     
+def _upload_to_teamdrive(coll,subj,excel_file):
+    """
+    Upload Excel report to Team Drive and do some cleanup
+    
+    param: coll: Collection name
+    param: subj: Data type (fulltext, metadata or references)
+    param: excel_file: Excel report with full path
+    """
+    logger.info('Uploading {0} to Team Drive'.format(excel_file))
+    name2id = config['NAME2ID']
+    try:
+        gm = GoogleManager(authtype="service",
+                       folderId=config['FOLDER_ID'],
+                       secretsFile=config['SECRETS_FILE'],
+                       scopes=config['SCOPES'])
+    except Exception as err:
+        logger.error('Failed to instantiate GoogleManager: {0}'.format(err))
+        raise GoogleManagerException('Failed to instantiate GoogleManager: {0}'.format(err))
+    try:
+        folderIdent = name2id[coll]
+    except Exception as err:
+        raise FolderIdNotFound("Cannot find folder id for: {0}".format(topic))
+    # Point the GoogleManager object to this folder
+    gm.folderid = folderIdent
+    # Get all reports stored in this folder (with their Google Drive ID and name)
+    reports = gm.list_files(return_fields="id,name")
+    # Get all reports in the Google Drive for the data type at hand
+    reports = [r for r in reports if r['name'].lower().startswith(subj)]
+    # Is the newly generated report already in the Team Drive?
+    if os.path.basename(excel_file).replace('.xlsx','') in [r['name'] for r in reports]:
+        # Report is already in Team Drive. Nothing to do.
+        return False
+    # This report is not yet on the Team Drive. Time to upload.
+    upload_name = os.path.basename(excel_file)
+    kwargs = {
+        "infile": excel_file,
+        "upload_name": upload_name,
+        "mtype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "meta_mtype": "application/vnd.google-apps.spreadsheet"
+    }
+    try:
+        res = gm.upload_file(**kwargs)
+        logger.info('Successfully uploaded {0} to Team Drive'.format(excel_file))
+    except Exception as err:
+        raise GoogleUploadException("Unable to upload file %s to google drive: %s" % (excel_file if excel_file else '?', err)) from None
+    # Finally, remove the reports that were there already
+    for r in reports:
+        try:
+            res = gm.delete_file(fileId=r['id'])
+            logger.info('Successfully deleted {0} from Team Drive'.format(r['name']))
+        except Exception as err:
+            raise GoogleDeleteException("Unable to delete file %s from google drive: %s" % (r['name'], err))
+    return True

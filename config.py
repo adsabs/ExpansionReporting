@@ -115,4 +115,12 @@ NO_FULLTEXT = {
     'SoSyR': '1-36',
     'SoPh': '72,101',
 }
+# Parameters used to connect with Google Drive
+SECRETS_FILE="SECRETS_FILE.json"
+SCOPES=["https://www.googleapis.com/auth/drive"]
+FOLDER_ID = "FOLDER_ID_string"
+# List of data types covered by reports
+DATA_TYPES = ['fulltext','metadata','references']
+# Mapping of topics/desciplines to Google Drive folder ID
+NAME2ID = {}
 

@@ -8,6 +8,7 @@ from xreport.utils import _get_usage
 from xreport.utils import _get_records
 from xreport.utils import _get_journal_coverage
 from xreport.utils import _string2list
+from xreport.utils import _upload_to_teamdrive
 from datetime import datetime
 from datetime import date
 from operator import itemgetter
@@ -184,6 +185,11 @@ class Report(object):
                 if outputdata:
                     output_frame = pd.DataFrame(outputdata)
                     output_frame.style.applymap(self._highlight_cells).to_excel(output_file, engine='openpyxl', index=False, header=False, freeze_panes=(1,1))
+        if output_file and os.path.exists(output_file) and collection != 'ES':
+            try:
+                res = _upload_to_teamdrive(collection,subject.lower(),output_file)
+            except Exception as err:
+                self.logger.error("Failed to upload report {0} to Team Drive: {1}".format(os.path.basename(output_file), err))
     #
     def save_missing(self, collection, report_type, subject):
         """
