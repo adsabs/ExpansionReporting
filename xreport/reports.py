@@ -13,6 +13,9 @@ from datetime import datetime
 from datetime import date
 from operator import itemgetter
 
+class JournalsDatabaseException(Exception):
+    pass
+
 class Report(object):
     """
 
@@ -618,6 +621,8 @@ class MetaDataReport(Report):
             cov_dict = {}
             for entry in cov_data:
                 if self.use_year:
+                    if not 'year' in entry:
+                        raise JournalsDatabaseException('JournalsDB data is missing year data')
                     try:
                         year = int(entry['year'])
                     except:
