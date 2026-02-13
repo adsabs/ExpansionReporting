@@ -5,16 +5,24 @@ LOGGING_LEVEL = 'INFO'
 LOG_STDOUT = False
 # ============================= ADS ============================================ #
 ADS_API_TOKEN = "<secret>"
-ADS_API_URL = "https://api.adsabs.harvard.edu/v1"
+ADS_API_URL = "https://dev.adsabs.harvard.edu/v1"
 CLASSIC_FULLTEXT_INDEX = "/tmp/all.links"
 CLASSIC_USAGE_INDEX = {
     'reads':'/tmp/reads.links',
     'downloads':'/tmp/downloads.links'
 }
 ADS_REFERENCE_DATA = "/references/stats"
+ADS_FULLTEXT_DATA = "/fulltext/stats"
+ADS_METADATA_DATA = "/metadata/stats"
 ADS_REFERENCE_STATS_YEAR = "refcounts_aggr_by_year.tsv"
 ADS_REFERENCE_STATS_VOLUME = "refcounts_aggr_by_volume.tsv"
+ADS_FULLTEXT_STATS_YEAR = "fulltext_year_aggr.tsv"
+ADS_FULLTEXT_STATS_VOLUME = "fulltext_volume_aggr.tsv"
+ADS_METADATA_STATS_YEAR = "records_agg_year.tsv"
+ADS_METADATA_STATS_VOLUME = "records_agg_volume.tsv"
 ADS_PUBLISHER_DATA = "/config/publisher_bibstem.dat"
+ADS_COMPLETENESS_DATA = "/config/completeness_export.json"
+ADS_BIBSTEMS = "bibstems.dat"
 # The root of the output location
 OUTPUT_DIRECTORY = '/tmp/reports'
 # ============================= APPLICATION ==================================== #
@@ -37,7 +45,7 @@ TOPIC_SUBJECTS = ['FULLTEXT', 'REFERENCES', 'METADATA']
 # Which journals are we reporting on per collection
 JOURNALS = {
     'CORE_AST':['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','NatAs','PASP'],
-    'AST': ['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','ARep','AsBio','AstL','CeMDA','FrASS','Galax','GeCoA','IAUS','IJAsB','JCAP','MNRAS','NatAs','PASA','PASJ','PASP','RAA','RNAAS','SCPMA','Univ','ASPC'],
+    'AST': ['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','ARep','AsBio','AstL','CeMDA','FrASS','Galax','GeCoA','IAUS','IJAsB','JCAP','MNRAS','NatAs','PASA','PASJ','PASP','RAA','RNAAS','SCPMA','Univ'],
     'PS': ["AREPS","ASTRA","AdSpR","AnGeo","Ap&SS","AsBio","CeMDA","E&PSL","EM&P","GeCoA","IJAsB","Icar","JAtS",
            "JGRA","JGRD","JGRE","M&PS","M&PSA","Metic","NatGe","P&SS","PEPI","RvGeo","SSRv","SoSyR","SoPh",
            "SpWea","PSJ","Moon","SpPol"],

@@ -69,7 +69,7 @@ def create_report(**args):
         # Set the reporing type
         mreport.use_year = use_year
         try:
-            mreport.make_report(collection, report_format)
+            mreport.make_report(collection, 'general')
         except Exception as err:
             msg = "Error making metadata report for collection '{0}' in format '{1}': {2}".format(collection, report_format, err)
             logger.error(msg)
