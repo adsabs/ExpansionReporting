@@ -1,12 +1,14 @@
 import pandas as pd
+import numpy as np
 import os
 import sys
 import glob
+import json
 from xreport.utils import _get_facet_data
 from xreport.utils import _get_citations
 from xreport.utils import _get_usage
 from xreport.utils import _get_records
-from xreport.utils import _get_journal_coverage
+#from xreport.utils import _get_journal_coverage
 from xreport.utils import _string2list
 from xreport.utils import _upload_to_teamdrive
 from datetime import datetime
@@ -45,6 +47,15 @@ class Report(object):
         param: collection: collection of publications to create report for
         param: report_type: specification of report type
         """
+        # Get all bibstems currently in system
+        self.bibstems = []
+        with open(self.config['ADS_BIBSTEMS']) as stems_file:
+            for line in stems_file:
+                fields = line.strip().split('\t')
+                if len(fields) == 3 and fields[1] in ['R','J']:
+                    self.bibstems.append(fields[0].replace('.',''))
+        # Add ApJ Letters to bibstems
+        self.bibstems.append('ApJL')
         # Which journals (i.e. bibstems) make up the collection under consideration
         try:
             self.journals = self.config['JOURNALS'][collection]
@@ -52,6 +63,11 @@ class Report(object):
             msg = "Unable to find journals for collection: {} (Exception: {})".format(collection, err)
             self.logger.error(msg)
             raise
+        # Remove all journals not in current bibstem list
+        for j in self.journals:
+            if j not in self.bibstems:
+                self.logger.info("Removing {0} from journals list: not in bibstems".format(j))
+                self.journals.remove(j)
         # Get a map from bibstem to publisher
         self._get_publishers()
         # Initialize statistics and publisher data structure
@@ -72,8 +88,8 @@ class Report(object):
             self.publisher[journal] = self.stem2publisher.get(journal,'NA')
         # Initialize summary data structure
         self.summarydata = {}
-        for collection in self.config['COLLECTIONS']:
-            self.summarydata[collection] = {
+        for collect in self.config['COLLECTIONS']:
+            self.summarydata[collect] = {
                 'nrecs':0, # number of records
                 'ftrecs':0, # number of records with full text
                 'refrecs':0, # number of refereed records
@@ -86,8 +102,8 @@ class Report(object):
                 'downloads':'NA', # total number of downloads
                 'recent_downloads':'NA', # total number of recent downloads
             }
-        for collection in self.config['CONTENT_QUERIES'].keys():
-            self.summarydata["{0} recent sample".format(collection)] = {
+        for collect in self.config['CONTENT_QUERIES'].keys():
+            self.summarydata["{0} recent sample".format(collect)] = {
                 'nrecs':0, # number of records
                 'ftrecs':0, # number of records with full text
                 'refrecs':0, # number of refereed records
@@ -106,6 +122,16 @@ class Report(object):
             self.missing[journal] = []
         # Update statistics data structure with general publication information
         self._get_publication_data()
+        # Check if we have journals without publication data (i.e. records)
+        empty_journals = [jnl for jnl, jdata in self.statsdata.items() if not jdata['pubdata']]
+        if empty_journals:
+            # We have journals without records: remove them from the journals list
+            for j in empty_journals:
+                self.logger.info("Removing {0} from journals list: no records found".format(j))
+                self.journals.remove(j)
+        # Store metadata completeness data
+        with open(self.config['ADS_COMPLETENESS_DATA']) as json_file:
+            self.completeness_data = json.load(json_file)
         # Record all journals/volumes for which full text, references or metadata coverage
         # needs to be skipped
         self._get_skip_volumes()
@@ -160,7 +186,10 @@ class Report(object):
                 for jrnl in self.journals:
                     if str(data_key) in self.statsdata[jrnl]['general']:
                         perc = round(100*self.statsdata[jrnl]['general'][str(data_key)],1)
-                        row.append(perc)
+                        if perc >= 0.0:
+                            row.append(perc)
+                        else:
+                            row.append("")
                     else:
                         row.append("")
                 outputdata.append(row)
@@ -254,6 +283,59 @@ class Report(object):
         For a set of journals, get some basic publication data
         
         """
+        ## Dataframe with data by volume
+        # Location of publication data aggregated by volume
+        data_file = "{0}/{1}".format(self.config['ADS_METADATA_DATA'], self.config['ADS_METADATA_STATS_VOLUME'])
+        # Read in volume data and filter on current journals
+        vol_df = pd.read_csv(data_file, sep='\t')
+#        # Remove all entries where the volume contains a letter
+#        pattern = r'[a-zA-Z]'
+#        mask = vol_df['volume'].str.contains(pattern, na=False)
+#        vol_df = vol_df[~mask]
+        # Remove periods from bibstems
+        first_col = vol_df.columns[0]
+        vol_df[first_col] = vol_df[first_col].astype(str).str.replace('.', '', regex=False)
+        # Remove periods from volume entries
+        second_col = vol_df.columns[1]
+        vol_df[second_col] = vol_df[second_col].astype(str).str.replace('.', '', regex=False)
+        # Now filter by journals
+        vol_df = vol_df[vol_df['bibstem'].isin(self.journals)]
+#        # Remove all entries where the volume contains a letter
+#        pattern = r'[a-zA-Z]'
+#        mask = vol_df['volume'].str.contains(pattern, na=False)
+#        vol_df = vol_df[~mask]
+        # Make sure the volumes are integers
+        vol_df['volume'] = vol_df['volume'].astype(int)
+        ## Dataframe with data by year
+        # Location of publication data aggregated by year
+        data_file = "{0}/{1}".format(self.config['ADS_METADATA_DATA'], self.config['ADS_METADATA_STATS_YEAR'])
+        # Read in year data and filter on current journals
+        year_df = pd.read_csv(data_file, sep='\t')
+        # Remove periods from bibstems
+        first_col = year_df.columns[0]
+        year_df[first_col] = year_df[first_col].astype(str).str.replace('.', '', regex=False)
+        # Filter by journals
+        year_df = year_df[year_df['bibstem'].isin(self.journals)]
+        # Compile required data dictionaries for all journals
+        results = {}
+        for journal in self.journals:
+            self.statsdata[journal]['startyear'] = year_df[year_df['bibstem'] == journal]['year'].min()
+            self.statsdata[journal]['lastyear'] = year_df[year_df['bibstem'] == journal]['year'].max()
+            self.statsdata[journal]['startvol'] = vol_df[vol_df['bibstem'] == journal]['volume'].min()
+            self.statsdata[journal]['lastvol'] = vol_df[vol_df['bibstem'] == journal]['volume'].max()
+            if self.use_year:
+                jdata = year_df[year_df['bibstem'] == journal]
+                res = dict(zip(jdata['year'], jdata['record_count']))
+            else:
+                jdata = vol_df[vol_df['bibstem'] == journal]
+                res = dict(zip(jdata['volume'], jdata['record_count']))
+            self.statsdata[journal]['pubdata'] = res
+    #
+    def _get_publication_data_api(self):
+        """
+        For a set of journals, get some basic publication data
+        
+        """
         for journal in self.journals:
             # First get the number of records per volume
             query = 'bibstem:"{0}" doctype:(article OR inproceedings)'.format(journal)
@@ -280,7 +362,7 @@ class Report(object):
                 self.statsdata[journal]['pubdata'] = year_dict
             else:
                 self.statsdata[journal]['pubdata'] = art_dict
-    #
+
     def _get_skip_volumes(self):
         """
         For full text, references and metadata, check the config for
@@ -299,7 +381,7 @@ class Report(object):
         try:
             no_fulltext = self.config['NO_REFERENCES']
             for jrnl in no_fulltext.keys():
-                self.skip_fulltext[jrnl] = _string2list(no_fulltext.get(jrnl,'0'))
+                self.skip_references[jrnl] = _string2list(no_fulltext.get(jrnl,'0'))
         except:
             pass
         # Determine all volumes for which we need to skip metadata coverage reporting
@@ -307,7 +389,7 @@ class Report(object):
         try:
             no_fulltext = self.config['NO_METADATA']
             for jrnl in no_fulltext.keys():
-                self.skip_fulltext[jrnl] = _string2list(no_fulltext.get(jrnl,'0'))
+                self.skip_metadata[jrnl] = _string2list(no_fulltext.get(jrnl,'0'))
         except:
             pass
         
@@ -317,7 +399,9 @@ class Report(object):
         when writing data to Excel
         """
         try:
-            if val >= 90:
+            if val < 0:
+                color = '#ffffff'
+            elif val >= 90:
                 color = '#6aa84f'
             elif val <= 60:
                 color = '#f4cccc'
@@ -415,8 +499,48 @@ class FullTextReport(Report):
                 data.append([bibstem, data_key, source.lower()])
         # The lookup facility is a Pandas dataframe
         self.ft_index = pd.DataFrame(data, columns=['bibstem',key_column,'source'])
-        
+
     def _get_fulltext_data_general(self):
+        """
+        For a set of journals get the fraction of records with fulltext by volume or year
+        """
+        # Establish where the data is located
+        if self.use_year:
+            data_file = "{0}/{1}".format(self.config['ADS_FULLTEXT_DATA'], self.config['ADS_FULLTEXT_STATS_YEAR'])
+            field = 'year'
+        else:
+            data_file = "{0}/{1}".format(self.config['ADS_FULLTEXT_DATA'], self.config['ADS_FULLTEXT_STATS_VOLUME'])
+            field = 'volume'
+        # Read the data into a dataframe
+        df = pd.read_csv(data_file, sep='\t')
+        # Remove the periods in the bibstem column
+        first_col = df.columns[0]
+        df[first_col] = df[first_col].astype(str).str.replace('.', '', regex=False)
+        # Keep just those entries with the bibstems of the journals being processed
+        df = df[df['bibstem'].isin(self.journals)]
+        # Dictionary keys (volume or year) are integers, formatted as strings
+        df[field] = df[field].astype(int)
+        df[field] = df[field].astype(str)
+        # Now get the data for each journal
+        for journal in self.journals:
+            # Initialize the coverage with 0.0
+            cov_dict = {}
+            for kk in sorted(self.statsdata[journal]['pubdata'].keys()):
+                cov_dict[str(kk)] = 0.0
+            try:
+                jdata = df[df['bibstem'] == journal]
+                # Calculate the fraction of records with fulltext
+                fractions = jdata['ft_count']/jdata['record_count']
+                # Just in case there were cases with zero records, 
+                # replace the "inf" entries by 0
+                fractions = np.where(np.isinf(fractions), 0, fractions)
+                # Store the results as a dictionary
+                cov_dict = dict(zip(jdata[field], fractions))
+            except:
+                pass
+            self.statsdata[journal]['general'] = cov_dict
+
+    def _get_fulltext_data_general_api(self):
         """
         For a set of journals, get full text data (the number of records with full text per volume)
 
@@ -611,18 +735,27 @@ class MetaDataReport(Report):
         """
         # Determine if certain volumes need to be skipped:
         for journal in self.journals:
-            # The query populates a dictionary keyed on volume number, listing the number of records per volume
-            letter = False
-            if journal == 'ApJL':
-                cov_data = _get_journal_coverage(self.config, 'ApJ')
-                letter = True
-            else:
-                cov_data = _get_journal_coverage(self.config, journal)
             cov_dict = {}
+            # The query populates a dictionary keyed on volume number, listing the number of records per volume
+            for year in range(int(self.config['DEFAULT_START_YEAR']), int(self.current_year)):
+                cov_dict[str(year)] = -0.01
+            letter = False
+            try:
+                if journal == 'ApJL':
+#                    cov_data = _get_journal_coverage(self.config, 'ApJ')
+                    cov_data  = [e for e in self.completeness_data if e['bibstem'] == 'ApJ'][0]['completeness_details']
+                    letter = True
+                else:
+                    cov_data  = [e for e in self.completeness_data if e['bibstem'] == journal][0]['completeness_details']
+#                    cov_data = _get_journal_coverage(self.config, journal)
+            except:
+                self.logger.error('No JournalsDB entry found for {0}'.format(journal))
+                cov_data = {}
             for entry in cov_data:
                 if self.use_year:
                     if not 'year' in entry:
-                        raise JournalsDatabaseException('JournalsDB data is missing year data')
+                        self.logger.error('JournalsDB data is missing year data for {0}'.format(journal))
+                        continue
                     try:
                         year = int(entry['year'])
                     except:
