@@ -3,14 +3,14 @@ import sys
 import pandas as pd
 import numpy as np
 
-ref_base = '/proj/ads/references'
+ref_base = '/proj/ads/abstracts/stats/references'
 abs_base = '/proj/ads/abstracts/config/links'
 
 # Input files
 # columns:
 # 1. bibcode
 # 2. total raw references
-raw_counts = '{0}/stats/references.counts.tsv'.format(ref_base)
+raw_counts = '{0}/references.counts.tsv'.format(ref_base)
 # columns:
 # 1. bibcode
 # 2. total matched references
@@ -18,9 +18,9 @@ raw_counts = '{0}/stats/references.counts.tsv'.format(ref_base)
 ads_counts = '{0}/reference/all.counts'.format(abs_base)
 # Output files
 # Reference counts aggregated by year
-agg_by_year_res = '{0}/stats/refcounts_aggr_by_year.tsv'.format(ref_base)
+agg_by_year_res = '{0}/refcounts_aggr_by_year.tsv'.format(ref_base)
 # Reference counts aggregated by volume
-agg_by_volume_res = '{0}/stats/refcounts_aggr_by_volume.tsv'.format(ref_base)
+agg_by_volume_res = '{0}/refcounts_aggr_by_volume.tsv'.format(ref_base)
 
 # Read the input data
 # Raw reference counts
