@@ -6,9 +6,10 @@ import pandas as pd
 
 src_base_dir = '/proj/ads/references'
 base_dir = '/proj/ads/references'
+res_dir = '/proj/ads/abstracts/stats/references'
 
 reference_counts_file = 'references.counts.tsv'
-results_file = "{0}/stats/{1}".format(base_dir, reference_counts_file)
+results_file = "{0}/{1}".format(res_dir, reference_counts_file)
 
 counts_files = glob.glob('{0}/links/*.counts'.format(base_dir))
 

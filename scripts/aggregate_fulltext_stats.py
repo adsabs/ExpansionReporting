@@ -4,14 +4,15 @@ import re
 import pandas as pd
 import numpy as np
 ## Definition of output files
+res_base = '/proj/ads/abstracts/stats'
 # Article counts aggragated by bibstem and volume
-records_volume_aggr = 'records_agg_volume.tsv'
+records_volume_aggr = '{0}/metadata/records_agg_volume.tsv'.format(res_base)
 # Article counts aggregated by bibstem and publication year
-records_year_aggr = 'records_agg_year.tsv'
+records_year_aggr = '{0}/metadata/records_agg_year.tsv'.format(res_base)
 # Articles with fulltext, aggregated by bibstem and volume
-agg_by_volume = 'fulltext_volume_aggr.tsv'
+agg_by_volume = '{0}/fulltext/fulltext_volume_aggr.tsv'.format(res_base)
 # Articles with fulltext, aggregated by bibstem and publication year
-agg_by_year = 'fulltext_year_aggr.tsv'
+agg_by_year = '{0}/fulltext/fulltext_year_aggr.tsv'.format(res_base)
 # Bibcodes for all records (first column)
 bibdata = '/proj/ads/abstracts/config/bib2accno.dat'
 # Bibcodes for all records with fulltext (first column)
