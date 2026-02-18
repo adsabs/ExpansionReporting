@@ -11,6 +11,7 @@ from xreport.utils import _get_records
 #from xreport.utils import _get_journal_coverage
 from xreport.utils import _string2list
 from xreport.utils import _upload_to_teamdrive
+from xreport.utils import _add_hyperlinks
 from datetime import datetime
 from datetime import date
 from operator import itemgetter
@@ -218,6 +219,11 @@ class Report(object):
                     output_frame = pd.DataFrame(outputdata)
                     output_frame.style.applymap(self._highlight_cells).to_excel(output_file, engine='openpyxl', index=False, header=False, freeze_panes=(1,1))
         if output_file and os.path.exists(output_file) and collection != 'ES':
+            if subject.lower() == 'fulltext':
+                try:
+                    res = _add_hyperlinks(output_file)
+                except Exception as err:
+                    self.logger.error("Failed to add hyperlinks to fulltext report {0}: {1}".format(output_file, err))
             try:
                 res = _upload_to_teamdrive(collection,subject.lower(),output_file)
             except Exception as err:
