@@ -8,6 +8,9 @@ import math
 import functools
 from datetime import date
 from adsgcon.gmanager import GoogleManager
+import openpyxl
+from openpyxl.styles import Font
+from urllib.parse import urlencode, urlunparse
 # ============================= INITIALIZATION ==================================== #
 
 from adsputils import setup_logging, load_config
@@ -319,3 +322,85 @@ def _upload_to_teamdrive(coll,subj,excel_file):
         except Exception as err:
             raise GoogleDeleteException("Unable to delete file %s from google drive: %s" % (r['name'], err))
     return True
+
+def _create_url(bibstem, year_vol):
+    """
+    Create SciX URL for records without fulltext for a given year or volume
+    
+    param: bibstem: The bibstem for the journal in question
+    param: year_vol: Filter by year or volume
+    """
+    scheme = 'https'
+    netloc = 'www.scixplorer.org'
+    path = '/search'
+    params = {
+        'p': '1',
+        'q': 'bibstem:{0} {1} -has:body -title:(erratum OR editorial) doctype:article'.format(bibstem, year_vol),
+        'sort': ['score desc', 'date desc'], # List handles multiple sort params
+        'd': 'general'
+    }
+    query_string = urlencode(params, doseq=True)
+    final_url = urlunparse((scheme, netloc, path, '', query_string, ''))
+    return final_url
+
+def _add_hyperlinks(filename, sheet_name='Sheet1', threshold=80):
+    """
+    Add hyperlinks to coverage spreadsheet for cells with values smaller than a threshold
+    
+    """
+    # Skip these rows
+    skip = ['publisher ->','start year ->','last year ->','start vol ->','last vol ->']
+    # 1. Load the workbook and select the active worksheet
+    wb = openpyxl.load_workbook(filename)
+    if sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+    else:
+        logger.info('Sheet {0} not found. Using active sheet.'.format(sheet_name))
+        ws = wb.active
+
+    # 2. Extract column headers (assuming the first row is the header row)
+    # Use ws.iter_rows(min_row=1, max_row=1, values_only=True) for efficiency
+    column_headers = {}
+    for cell in ws[1]:
+        column_headers[cell.column_letter] = cell.value
+
+    # 3. Extract row headers (assuming the first column is the header column)
+    row_headers = {}
+    for row_cell in ws.iter_rows(min_col=1, max_col=1, min_row=2): # Start from the second row
+        cell = row_cell[0]
+        row_headers[cell.row] = cell.value
+
+    # 4. Iterate over all data cells (excluding the header row and column)
+    # Start from the second row (min_row=2) and second column (min_col=2)
+    for row in ws.iter_rows(min_row=2, min_col=2):
+        for cell in row:
+            try:
+                # Try to convert cell value to a number for the condition check
+                cell_value = float(cell.value)
+                # Check if the value is between 0 and threshold (exclusive of 0, inclusive of 60 based on prompt)
+                if 0 < cell_value <= float(threshold):
+                    # Get the corresponding column and row headers
+                    col_header = column_headers.get(cell.column_letter, 'N/A')
+                    row_header = row_headers.get(cell.row, 'N/A')
+                    if row_header not in skip:
+                        # Determine whether we need to filter by year or volume (from file name)
+                        if 'year' in filename:
+                            filter = "year:{0}".format(row_header)
+                        else:
+                            filter = "volume:{0}".format(row_header)
+                        # Assign hyperlink to cell
+                        cell.hyperlink = _create_url(col_header, filter) 
+                        # Apply the standard hyperlink style (blue and underlined)
+                        cell.font = Font(color="0000FF", underline="single")
+            except (ValueError, TypeError):
+                # Handle cases where the cell value is not a number
+                continue
+    # 5. Save the modified workbook
+    output_filename = filename.replace('.xlsx','.modified.xlsx')
+    wb.save(output_filename)
+    # 6. Replace the original workbook with the hyperlinked one
+    try:
+        # Renames source to destination, replacing destination if it exists
+        os.replace(output_filename, filename)
+    except OSError as err:
+        logger.error('Error replacing {0} by {1}: {2}'.format(filename, output_filename, err))
