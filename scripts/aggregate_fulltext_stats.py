@@ -52,7 +52,9 @@ rec_grouped_year_count = records.groupby(['bibstem', 'year']).size().reset_index
 rec_grouped_year_count.to_csv(records_year_aggr, sep='\t', index=False)
 ## Not process fulltext data
 # Read all bibcodes of records with fulltext into dataframe
-fulltext= pd.read_csv(fulltext_data, sep='\t', usecols=[0], header=None, names=['bibcode'])
+fulltext = pd.read_csv(fulltext_data, sep='\t', usecols=[0], header=None, names=['bibcode'])
+# Filter out rows where the last column equals "arXiv"
+fulltext = fulltext[fulltext.iloc[:, -1] != "arXiv"]
 # As before, add columns for bibstem, publication year and volume
 fulltext['bibstem'] = fulltext['bibcode'].str.extract(r'^\d{4}(.{5})')
 # Here as well, replace ApJ with ApJL when applicable
