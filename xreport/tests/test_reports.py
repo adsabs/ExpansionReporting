@@ -12,6 +12,7 @@ import pandas as pd
 from xreport.reports import Report
 from xreport.reports import FullTextReport
 from xreport.reports import ReferenceMatchingReport
+from xreport.reports import ReferenceCoverageReport
 from xreport.reports import SummaryReport
 
 class TestMethods(unittest.TestCase):
@@ -170,6 +171,35 @@ class TestMethods(unittest.TestCase):
         # Create the report using mock data
         rmr.make_report('AST', 'REFERENCES')
         self.assertEqual(rmr.statsdata['ApJ..']['publisher'][900], 96.7)
+
+        ######## TEST OF THE REFERENCE COVERAGE REPORT CLASS ###############################
+
+        rcr = ReferenceCoverageReport()
+        # Set the minimum state needed to test _get_refcoverage_data directly
+        rcr.use_year = True
+        rcr.journals = ['ApJ', 'MNRAS']
+        rcr.statsdata = {
+            'ApJ': {
+                'pubdata': {2012: 189, 2015: 186, 2020: 196},
+                'general': {}, 'arxiv': {}, 'publisher': {}, 'crossref': {}
+            },
+            'MNRAS': {
+                'pubdata': {2020: 196},
+                'general': {}, 'arxiv': {}, 'publisher': {}, 'crossref': {}
+            }
+        }
+        rcr.config['ADS_REFERENCE_DATA'] = '{0}/xreport/tests/data'.format(self.proj_home)
+        rcr.config['ADS_REFCOVERAGE_STATS_YEAR'] = 'refcoverage_aggr_by_year.tsv'
+        rcr._get_refcoverage_data()
+        # Fraction for ApJ 2020: 190 / 196
+        expected_frac_apj_2020 = round(190 / 196, 4)
+        self.assertAlmostEqual(rcr.statsdata['ApJ']['general']['2020'], expected_frac_apj_2020, places=3)
+        # Fraction for ApJ 2012: 170 / 189
+        expected_frac_apj_2012 = round(170 / 189, 4)
+        self.assertAlmostEqual(rcr.statsdata['ApJ']['general']['2012'], expected_frac_apj_2012, places=3)
+        # Fraction for MNRAS 2020: 185 / 196
+        expected_frac_mnras_2020 = round(185 / 196, 4)
+        self.assertAlmostEqual(rcr.statsdata['MNRAS']['general']['2020'], expected_frac_mnras_2020, places=3)
 
         ######## TEST OF THE SUMMARY REPORT CLASS ###############################
         sr = SummaryReport()
