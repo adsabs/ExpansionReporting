@@ -224,10 +224,11 @@ class Report(object):
                     res = _add_hyperlinks(output_file)
                 except Exception as err:
                     self.logger.error("Failed to add hyperlinks to fulltext report {0}: {1}".format(output_file, err))
-            try:
-                res = _upload_to_teamdrive(collection,subject.lower(),output_file)
-            except Exception as err:
-                self.logger.error("Failed to upload report {0} to Team Drive: {1}".format(os.path.basename(output_file), err))
+            if not self.config.get('NO_DRIVE', False):
+                try:
+                    res = _upload_to_teamdrive(collection,subject.lower(),output_file)
+                except Exception as err:
+                    self.logger.error("Failed to upload report {0} to Team Drive: {1}".format(os.path.basename(output_file), err))
     #
     def save_missing(self, collection, report_type, subject):
         """

@@ -26,10 +26,13 @@ def create_report(**args):
     subject = args['subject']
     # Do we report by volume or year?
     use_year = args['use_year']
+    # Skip Google Drive upload?
+    no_drive = args.get('no_drive', False)
     #
     if subject in ['FULLTEXT', 'ALL']:
         # Initialize the class for full text reporting
         ftreport = FullTextReport()
+        ftreport.config['NO_DRIVE'] = no_drive
         # Set the reporting type
         ftreport.use_year = use_year
         # The first step consists of retrieving and preparing the data to generate the report
@@ -53,6 +56,7 @@ def create_report(**args):
         rmreport = ReferenceMatchingReport()
         # Set the reporting type
         rmreport.use_year = use_year
+        rmreport.config['NO_DRIVE'] = no_drive
         try:
             rmreport.make_report(collection, 'general')
         except Exception as err:
@@ -69,6 +73,7 @@ def create_report(**args):
         mreport = MetaDataReport()
         # Set the reporing type
         mreport.use_year = use_year
+        mreport.config['NO_DRIVE'] = no_drive
         try:
             mreport.make_report(collection, 'general')
         except Exception as err:
@@ -83,6 +88,7 @@ def create_report(**args):
     if subject in ['REFCOVERAGE', 'ALL']:
         rcreport = ReferenceCoverageReport()
         rcreport.use_year = use_year
+        rcreport.config['NO_DRIVE'] = no_drive
         try:
             rcreport.make_report(collection, 'general')
         except Exception as err:
@@ -98,6 +104,7 @@ def create_report(**args):
         summary = SummaryReport()
         # Set the reporting type
         summary.use_year = use_year
+        summary.config['NO_DRIVE'] = no_drive
         try:
             summary.make_report(collection, report_format)
         except Exception as err:
