@@ -513,10 +513,10 @@ class FullTextReport(Report):
         """
         # Establish where the data is located
         if self.use_year:
-            data_file = "{0}/{1}".format(self.config['ADS_FULLTEXT_DATA'], self.config['ADS_FULLTEXT_STATS_YEAR'])
+            data_file = "{0}/{1}".format(self.config['ADS_STATS_DATA'], self.config['ADS_RECORD_STATS_YEAR'])
             field = 'year'
         else:
-            data_file = "{0}/{1}".format(self.config['ADS_FULLTEXT_DATA'], self.config['ADS_FULLTEXT_STATS_VOLUME'])
+            data_file = "{0}/{1}".format(self.config['ADS_STATS_DATA'], self.config['ADS_RECORD_STATS_VOLUME'])
             field = 'volume'
         # Read the data into a dataframe
         df = pd.read_csv(data_file, sep='\t')
@@ -537,8 +537,8 @@ class FullTextReport(Report):
             try:
                 jdata = df[df['bibstem'] == journal]
                 # Calculate the fraction of records with fulltext
-                fractions = jdata['ft_count']/jdata['record_count']
-                # Just in case there were cases with zero records, 
+                fractions = jdata['records_with_fulltext']/jdata['record_count']
+                # Just in case there were cases with zero records,
                 # replace the "inf" entries by 0
                 fractions = np.where(np.isinf(fractions), 0, fractions)
                 # Store the results as a dictionary
