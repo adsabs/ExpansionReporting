@@ -72,7 +72,7 @@ if __name__ == '__main__':
         sys.exit('The "curators" format only supports the "fulltext" report')
     if args.all:
         for coll in config.get('COLLECTIONS'):
-            for subject in ['FULLTEXT', 'REFERENCES','METADATA']:
+            for subject in ['FULLTEXT', 'REFERENCES', 'METADATA', 'REFCOVERAGE']:
                 try:
                     report = tasks.create_report(collection=coll, format=args.format, subject=subject, use_year=use_year)
                 except:

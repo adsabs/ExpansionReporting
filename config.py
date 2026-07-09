@@ -16,6 +16,8 @@ ADS_FULLTEXT_DATA = "/fulltext/stats"
 ADS_METADATA_DATA = "/metadata/stats"
 ADS_REFERENCE_STATS_YEAR = "refcounts_aggr_by_year.tsv"
 ADS_REFERENCE_STATS_VOLUME = "refcounts_aggr_by_volume.tsv"
+ADS_REFCOVERAGE_STATS_YEAR = "refcoverage_aggr_by_year.tsv"
+ADS_REFCOVERAGE_STATS_VOLUME = "refcoverage_aggr_by_volume.tsv"
 ADS_FULLTEXT_STATS_YEAR = "fulltext_year_aggr.tsv"
 ADS_FULLTEXT_STATS_VOLUME = "fulltext_volume_aggr.tsv"
 ADS_METADATA_STATS_YEAR = "records_agg_year.tsv"
@@ -40,8 +42,8 @@ COLLECTIONS = list(TOPIC_SETS.keys()) + list(CORE_COLLECTIONS.keys())
 # Report formats supported
 FORMATS = ['general', 'curators', 'missing']
 # Report types supported
-SUBJECTS = ['FULLTEXT', 'REFERENCES', 'SUMMARY', 'METADATA', 'ALL']
-TOPIC_SUBJECTS = ['FULLTEXT', 'REFERENCES', 'METADATA']
+SUBJECTS = ['FULLTEXT', 'REFERENCES', 'SUMMARY', 'METADATA', 'REFCOVERAGE', 'ALL']
+TOPIC_SUBJECTS = ['FULLTEXT', 'REFERENCES', 'METADATA', 'REFCOVERAGE']
 # Which journals are we reporting on per collection
 JOURNALS = {
     'CORE_AST':['A&A','A&ARv','A&AS','AJ','AN','APh','ApJ','ApJL','ApJS','ARA&A','NatAs','PASP'],

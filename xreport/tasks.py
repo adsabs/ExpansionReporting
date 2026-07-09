@@ -5,6 +5,7 @@ from builtins import str
 import xreport.app as app_module
 from xreport.reports import FullTextReport
 from xreport.reports import ReferenceMatchingReport
+from xreport.reports import ReferenceCoverageReport
 from xreport.reports import MetaDataReport
 from xreport.reports import SummaryReport
 # ============================= INITIALIZATION ==================================== #
@@ -78,6 +79,19 @@ def create_report(**args):
             mreport.save_report(collection, report_format, subject)
         except Exception as err:
             msg = "Error saving metadata report for collection '{0}' in format '{1}': {2}".format(collection, report_format, err)
+            logger.error(msg)
+    if subject in ['REFCOVERAGE', 'ALL']:
+        rcreport = ReferenceCoverageReport()
+        rcreport.use_year = use_year
+        try:
+            rcreport.make_report(collection, 'general')
+        except Exception as err:
+            msg = "Error making reference coverage report for collection '{0}' in format '{1}': {2}".format(collection, report_format, err)
+            logger.error(msg)
+        try:
+            rcreport.save_report(collection, 'general', subject)
+        except Exception as err:
+            msg = "Error saving reference coverage report for collection '{0}' in format '{1}': {2}".format(collection, report_format, err)
             logger.error(msg)
     if subject == 'SUMMARY':
         # Create a summarizing report

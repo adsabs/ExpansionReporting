@@ -705,6 +705,63 @@ class ReferenceMatchingReport(Report):
             res_dict = dict(zip(results[key_column], results['fraction']))
             self.statsdata[journal]['general'] = {str(key): value for key, value in res_dict.items()}
 
+class ReferenceCoverageReport(Report):
+    """
+    Report showing the percentage of records for which references are available
+    from the publisher or Crossref
+    """
+    def __init__(self, config={}):
+        super(ReferenceCoverageReport, self).__init__(config=config)
+
+    def make_report(self, collection, report_type):
+        """
+        param: collection: collection of publications to create report for
+        param: report_type: specification of report type
+        """
+        super(ReferenceCoverageReport, self).make_report(collection, report_type)
+        self._get_refcoverage_data()
+
+    def save_report(self, collection, report_type, subject):
+        """
+        Save the data created in the make_report method in Excel format
+
+        param: collection: collection of publications to create report for
+        param: report_type: specification of report type
+        param: subject: specification of type data to create report for
+        """
+        super(ReferenceCoverageReport, self).save_report(collection, report_type, subject)
+
+    def _get_refcoverage_data(self):
+        """
+        For a set of journals, get the fraction of records with references available
+        (from publisher or Crossref) by volume or year
+        """
+        if self.use_year:
+            data_file = "{0}/{1}".format(self.config['ADS_REFERENCE_DATA'], self.config['ADS_REFCOVERAGE_STATS_YEAR'])
+            field = 'year'
+        else:
+            data_file = "{0}/{1}".format(self.config['ADS_REFERENCE_DATA'], self.config['ADS_REFCOVERAGE_STATS_VOLUME'])
+            field = 'volume'
+        df = pd.read_csv(data_file, sep='\t')
+        first_col = df.columns[0]
+        df[first_col] = df[first_col].astype(str).str.replace('.', '', regex=False)
+        df = df[df['bibstem'].isin(self.journals)]
+        df[field] = df[field].astype(int)
+        df[field] = df[field].astype(str)
+        for journal in self.journals:
+            cov_dict = {}
+            for kk in sorted(self.statsdata[journal]['pubdata'].keys()):
+                cov_dict[str(kk)] = 0.0
+            try:
+                jdata = df[df['bibstem'] == journal]
+                fractions = jdata['ref_count'] / jdata['record_count']
+                fractions = np.where(np.isinf(fractions), 0, fractions)
+                cov_dict = dict(zip(jdata[field], fractions))
+            except Exception:
+                pass
+            self.statsdata[journal]['general'] = cov_dict
+
+
 class MetaDataReport(Report):
     """
     Create metadata completeness report 
