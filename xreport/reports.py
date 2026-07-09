@@ -292,7 +292,7 @@ class Report(object):
         """
         ## Dataframe with data by volume
         # Location of publication data aggregated by volume
-        data_file = "{0}/{1}".format(self.config['ADS_METADATA_DATA'], self.config['ADS_METADATA_STATS_VOLUME'])
+        data_file = "{0}/{1}".format(self.config['ADS_STATS_DATA'], self.config['ADS_RECORD_STATS_VOLUME'])
         # Read in volume data and filter on current journals
         vol_df = pd.read_csv(data_file, sep='\t')
 #        # Remove all entries where the volume contains a letter
@@ -315,7 +315,7 @@ class Report(object):
         vol_df['volume'] = vol_df['volume'].astype(int)
         ## Dataframe with data by year
         # Location of publication data aggregated by year
-        data_file = "{0}/{1}".format(self.config['ADS_METADATA_DATA'], self.config['ADS_METADATA_STATS_YEAR'])
+        data_file = "{0}/{1}".format(self.config['ADS_STATS_DATA'], self.config['ADS_RECORD_STATS_YEAR'])
         # Read in year data and filter on current journals
         year_df = pd.read_csv(data_file, sep='\t')
         # Remove periods from bibstems
