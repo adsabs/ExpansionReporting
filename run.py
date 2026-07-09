@@ -46,6 +46,8 @@ if __name__ == '__main__':
                         help='Run all reports on all special topics')
     parser.add_argument('-l', '--list', action='store_true',
                         help='List of all collections')
+    parser.add_argument('-n', '--no-drive', action='store_true', dest='no_drive',
+                        help='Skip uploading reports to Google Drive')
     args = parser.parse_args()
 
     # Determine the type of reporting: by volume or by year. If by year, set the start year
@@ -74,7 +76,7 @@ if __name__ == '__main__':
         for coll in config.get('COLLECTIONS'):
             for subject in ['FULLTEXT', 'REFERENCES', 'METADATA', 'REFCOVERAGE']:
                 try:
-                    report = tasks.create_report(collection=coll, format=args.format, subject=subject, use_year=use_year)
+                    report = tasks.create_report(collection=coll, format=args.format, subject=subject, use_year=use_year, no_drive=args.no_drive)
                 except:
                     logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, args.format, coll, error))
                     sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, args.format, coll, error))
@@ -82,20 +84,20 @@ if __name__ == '__main__':
         for coll, name in config.get('TOPIC_SETS').items():
             if args.format.lower() != 'curators':
                 try:
-                    report = tasks.create_report(collection=coll, format="general", subject=args.subject, use_year=use_year)
+                    report = tasks.create_report(collection=coll, format="general", subject=args.subject, use_year=use_year, no_drive=args.no_drive)
                 except Exception as error:
                     logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, "general", coll, error))
                     sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, "general", coll, error))
             else:
                  try:
-                     report = tasks.create_report(collection=coll, format="CURATORS", subject="FULLTEXT", use_year=use_year)
+                     report = tasks.create_report(collection=coll, format="CURATORS", subject="FULLTEXT", use_year=use_year, no_drive=args.no_drive)
                  except:
                      logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "CURATORS", coll, error))
                      sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(subject, "CURATORS", coll, error))
     else:
         try:
             coll = collmap.get(args.collection, args.collection)
-            report = tasks.create_report(collection=coll, format=args.format, subject=args.subject, use_year=use_year)
+            report = tasks.create_report(collection=coll, format=args.format, subject=args.subject, use_year=use_year, no_drive=args.no_drive)
         except Exception as error:
             logger.error('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, args.format, args.collection, error))
             sys.exit('Creating "{0}" report for "{1}" on collection "{2}" failed: {3}'.format(args.subject, args.format, args.collection, error))
