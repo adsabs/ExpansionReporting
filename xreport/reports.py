@@ -684,12 +684,14 @@ class ReferenceMatchingReport(Report):
         """
         if self.use_year:
             # We are reporting by year, so retrieve reference data aggregated by year
-            reference_data_file = "{0}/{1}".format(self.config["ADS_REFERENCE_DATA"],self.config["ADS_REFERENCE_STATS_YEAR"])
+            reference_data_file = "{0}/{1}".format(self.config["ADS_STATS_DATA"], self.config["ADS_RECORD_STATS_YEAR"])
         else:
             # We are reporting by volume, so retrieve reference data aggregated by volume
-            reference_data_file = "{0}/{1}".format(self.config["ADS_REFERENCE_DATA"],self.config["ADS_REFERENCE_STATS_VOLUME"])
+            reference_data_file = "{0}/{1}".format(self.config["ADS_STATS_DATA"], self.config["ADS_RECORD_STATS_VOLUME"])
         # Read reference data into a Pandas data frame
         self.reference_stats = pd.read_csv(reference_data_file, sep='\t')
+        # Remove periods from bibstems
+        self.reference_stats['bibstem'] = self.reference_stats['bibstem'].str.replace('.', '', regex=False)
 
     def _get_reference_stats(self):
         """
@@ -700,10 +702,11 @@ class ReferenceMatchingReport(Report):
         else:
             key_column = 'volume'
         for journal in self.journals:
-            # The data keys are either volumes or years, depending on our choice
-            data_keys = sorted(self.statsdata[journal]['pubdata'].keys())
-            results = self.reference_stats[self.reference_stats['bibstem'] == journal]
-            res_dict = dict(zip(results[key_column], results['fraction']))
+            results = self.reference_stats[self.reference_stats['bibstem'] == journal].copy()
+            # Only consider rows where there are references to match
+            results = results[results['reference_count'] > 0]
+            fractions = results['matched_reference_count'] / results['reference_count']
+            res_dict = dict(zip(results[key_column], fractions))
             self.statsdata[journal]['general'] = {str(key): value for key, value in res_dict.items()}
 
 class ReferenceCoverageReport(Report):
