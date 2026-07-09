@@ -741,10 +741,10 @@ class ReferenceCoverageReport(Report):
         (from publisher or Crossref) by volume or year
         """
         if self.use_year:
-            data_file = "{0}/{1}".format(self.config['ADS_REFERENCE_DATA'], self.config['ADS_REFCOVERAGE_STATS_YEAR'])
+            data_file = "{0}/{1}".format(self.config['ADS_STATS_DATA'], self.config['ADS_RECORD_STATS_YEAR'])
             field = 'year'
         else:
-            data_file = "{0}/{1}".format(self.config['ADS_REFERENCE_DATA'], self.config['ADS_REFCOVERAGE_STATS_VOLUME'])
+            data_file = "{0}/{1}".format(self.config['ADS_STATS_DATA'], self.config['ADS_RECORD_STATS_VOLUME'])
             field = 'volume'
         df = pd.read_csv(data_file, sep='\t')
         first_col = df.columns[0]
@@ -758,7 +758,7 @@ class ReferenceCoverageReport(Report):
                 cov_dict[str(kk)] = 0.0
             try:
                 jdata = df[df['bibstem'] == journal]
-                fractions = jdata['ref_count'] / jdata['record_count']
+                fractions = jdata['records_with_references'] / jdata['record_count']
                 fractions = np.where(np.isinf(fractions), 0, fractions)
                 cov_dict = dict(zip(jdata[field], fractions))
             except Exception:
