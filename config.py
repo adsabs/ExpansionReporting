@@ -11,20 +11,9 @@ CLASSIC_USAGE_INDEX = {
     'reads':'/tmp/reads.links',
     'downloads':'/tmp/downloads.links'
 }
-ADS_REFERENCE_DATA = "/references/stats"
-ADS_FULLTEXT_DATA = "/fulltext/stats"
-ADS_METADATA_DATA = "/metadata/stats"
 ADS_STATS_DATA = "/stats"
 ADS_RECORD_STATS_YEAR = "records_agg_year.tsv"
 ADS_RECORD_STATS_VOLUME = "records_agg_volume.tsv"
-ADS_REFERENCE_STATS_YEAR = "refcounts_aggr_by_year.tsv"
-ADS_REFERENCE_STATS_VOLUME = "refcounts_aggr_by_volume.tsv"
-ADS_REFCOVERAGE_STATS_YEAR = "refcoverage_aggr_by_year.tsv"
-ADS_REFCOVERAGE_STATS_VOLUME = "refcoverage_aggr_by_volume.tsv"
-ADS_FULLTEXT_STATS_YEAR = "fulltext_year_aggr.tsv"
-ADS_FULLTEXT_STATS_VOLUME = "fulltext_volume_aggr.tsv"
-ADS_METADATA_STATS_YEAR = "records_agg_year.tsv"
-ADS_METADATA_STATS_VOLUME = "records_agg_volume.tsv"
 ADS_PUBLISHER_DATA = "/config/publisher_bibstem.dat"
 ADS_COMPLETENESS_DATA = "/config/completeness_export.json"
 ADS_BIBSTEMS = "bibstems.dat"

@@ -67,7 +67,7 @@ class TestMethods(unittest.TestCase):
         # Confirm that the date string in the class is today's date
         self.assertEqual(r.dstring, datetime.today().strftime('%Y%m%d'))
         # We expect the following keys in the configuration dictionary
-        expected_config_keys = ['PROJ_HOME', 'ADS_API_TOKEN', 'ADS_API_URL', 'ADS_REFERENCE_DATA', 'CLASSIC_FULLTEXT_INDEX',
+        expected_config_keys = ['PROJ_HOME', 'ADS_API_TOKEN', 'ADS_API_URL', 'CLASSIC_FULLTEXT_INDEX',
                                 'CLASSIC_USAGE_INDEX', 'COLLECTIONS', 'COLLECTION_FILTERS', 'CONTENT_QUERIES', 'FORMATS', 
                                 'JOURNALS', 'LOGGING_LEVEL', 'LOG_STDOUT', 'OUTPUT_DIRECTORY', 'SKIP_USAGE', 'SOURCES', 
                                 'SUBJECTS', 'YEAR_IS_VOL']
@@ -162,11 +162,7 @@ class TestMethods(unittest.TestCase):
 
         ######## TEST OF THE REFERENCES REPORT CLASS ###############################
 
-        config = {
-            'ADS_REFERENCE_DATA':'{0}/xreport/tests/data/references'.format(self.proj_home)
-        }
-
-        rmr = ReferenceMatchingReport(config=config)
+        rmr = ReferenceMatchingReport()
         rmr.config['JOURNALS']['AST'] = ['ApJ..']
         # Create the report using mock data
         rmr.make_report('AST', 'REFERENCES')
