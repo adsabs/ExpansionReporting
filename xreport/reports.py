@@ -146,7 +146,9 @@ class Report(object):
         param: subject: specification of type data to create report for
         """
         # Where will the report(s) be written to
-        outdir = "{0}/{1}/{2}/{3}".format(self.config['OUTPUT_DIRECTORY'], report_type, collection, subject)
+        output_folder = getattr(self, '_output_folder', subject)
+        file_prefix = getattr(self, '_file_prefix', subject.lower())
+        outdir = "{0}/{1}/{2}/{3}".format(self.config['OUTPUT_DIRECTORY'], report_type, collection, output_folder)
         # Make sure the directory exists
         if not os.path.exists(outdir):
             os.makedirs(outdir)
@@ -174,9 +176,9 @@ class Report(object):
             outputdata += header
             # Generate the name of the output file, including full path
             if self.use_year:
-                output_file = "{0}/{1}_{2}_{3}.year.xlsx".format(outdir, subject.lower(), fname.replace(' ','_'), self.dstring)
+                output_file = "{0}/{1}_{2}_{3}.year.xlsx".format(outdir, file_prefix, fname.replace(' ','_'), self.dstring)
             else:
-                output_file = "{0}/{1}_{2}_{3}.volume.xlsx".format(outdir, subject.lower(), fname.replace(' ','_'), self.dstring)
+                output_file = "{0}/{1}_{2}_{3}.volume.xlsx".format(outdir, file_prefix, fname.replace(' ','_'), self.dstring)
             # Statistics are reported per volume or year for each journal in the collection
             if self.use_year:
                 data_keys = range(self.use_year, self.current_year+1)
@@ -205,9 +207,9 @@ class Report(object):
                 outputdata = []
                 outputdata += header
                 if self.use_year:
-                    output_file = "{0}/{1}_{2}_{3}_{4}.year.xlsx".format(outdir, subject.lower(), source, fname.replace(' ','_'), self.dstring)
+                    output_file = "{0}/{1}_{2}_{3}_{4}.year.xlsx".format(outdir, file_prefix, source, fname.replace(' ','_'), self.dstring)
                 else:
-                    output_file = "{0}/{1}_{2}_{3}_{4}.volume.xlsx".format(outdir, subject.lower(), source, fname.replace(' ','_'), self.dstring)
+                    output_file = "{0}/{1}_{2}_{3}_{4}.volume.xlsx".format(outdir, file_prefix, source, fname.replace(' ','_'), self.dstring)
                 if self.use_year:
                     data_keys = range(self.use_year, self.current_year+1)
                 else:
@@ -226,7 +228,7 @@ class Report(object):
                     self.logger.error("Failed to add hyperlinks to fulltext report {0}: {1}".format(output_file, err))
             if not self.config.get('NO_DRIVE', False):
                 try:
-                    res = _upload_to_teamdrive(collection,subject.lower(),output_file)
+                    res = _upload_to_teamdrive(collection,output_folder.lower(),output_file)
                 except Exception as err:
                     self.logger.error("Failed to upload report {0} to Team Drive: {1}".format(os.path.basename(output_file), err))
     #
@@ -655,6 +657,7 @@ class ReferenceMatchingReport(Report):
         Initializes the class
         """
         super(ReferenceMatchingReport, self).__init__(config=config)
+        self._file_prefix = 'refmatches'
         #
     def make_report(self, collection, report_type):
         """
@@ -716,6 +719,7 @@ class ReferenceCoverageReport(Report):
     """
     def __init__(self, config={}):
         super(ReferenceCoverageReport, self).__init__(config=config)
+        self._output_folder = 'REFERENCES'
 
     def make_report(self, collection, report_type):
         """
