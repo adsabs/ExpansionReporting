@@ -13,7 +13,7 @@ from openpyxl.styles import Font
 from urllib.parse import urlencode, urlunparse
 # ============================= INITIALIZATION ==================================== #
 
-from adsputils import setup_logging, load_config
+from xreport.compat import setup_logging, load_config
 
 proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), '../'))
 config = load_config(proj_home=proj_home)

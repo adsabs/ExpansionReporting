@@ -1,21 +1,18 @@
-from __future__ import absolute_import, unicode_literals
 import os
 import sys
-from builtins import str
-import xreport.app as app_module
 from xreport.reports import FullTextReport
 from xreport.reports import ReferenceMatchingReport
 from xreport.reports import ReferenceCoverageReport
 from xreport.reports import MetaDataReport
 from xreport.reports import SummaryReport
+from xreport.compat import setup_logging, load_config
 # ============================= INITIALIZATION ==================================== #
-
-from adsputils import setup_logging, load_config
 
 proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), '../'))
 config = load_config(proj_home=proj_home)
-app = app_module.xreport('ads-expansion-reporting', proj_home=proj_home, local_config=globals().get('local_config', {}))
-logger = app.logger
+logger = setup_logging(__name__, proj_home=proj_home,
+                       level=config.get('LOGGING_LEVEL', 'INFO'),
+                       attach_stdout=config.get('LOG_STDOUT', False))
 # ============================= FUNCTIONS ========================================= #
 def create_report(**args):
     # What is the report format
