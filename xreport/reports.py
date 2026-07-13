@@ -226,6 +226,11 @@ class Report(object):
                     res = _add_hyperlinks(output_file)
                 except Exception as err:
                     self.logger.error("Failed to add hyperlinks to fulltext report {0}: {1}".format(output_file, err))
+            elif subject.lower() == 'refcoverage':
+                try:
+                    res = _add_hyperlinks(output_file, query_modifier='-has:reference')
+                except Exception as err:
+                    self.logger.error("Failed to add hyperlinks to refcoverage report {0}: {1}".format(output_file, err))
             if not self.config.get('NO_DRIVE', False):
                 try:
                     res = _upload_to_teamdrive(collection,output_folder.lower(),output_file)
