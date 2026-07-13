@@ -19,7 +19,7 @@ class TestMethods(unittest.TestCase):
 
     '''Check if methods return expected results'''
     def setUp(self):
-        from adsputils import load_config
+        from xreport.compat import load_config
         self.proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), '../../'))
         self.config = load_config(proj_home=self.proj_home)
 

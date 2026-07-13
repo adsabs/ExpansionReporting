@@ -28,7 +28,7 @@ class Report(object):
         Initializes the class
         """
         # ============================= INITIALIZATION ==================================== #
-        from adsputils import setup_logging, load_config
+        from xreport.compat import setup_logging, load_config
         proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), '../'))
         self.config = load_config(proj_home=proj_home)
         if config:
