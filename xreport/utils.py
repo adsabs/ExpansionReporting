@@ -323,19 +323,20 @@ def _upload_to_teamdrive(coll,subj,excel_file):
             raise GoogleDeleteException("Unable to delete file %s from google drive: %s" % (r['name'], err))
     return True
 
-def _create_url(bibstem, year_vol):
+def _create_url(bibstem, year_vol, query_modifier='-has:body'):
     """
     Create SciX URL for records without fulltext for a given year or volume
-    
+
     param: bibstem: The bibstem for the journal in question
     param: year_vol: Filter by year or volume
+    param: query_modifier: ADS filter to select incomplete records (e.g. -has:body, -has:reference)
     """
     scheme = 'https'
     netloc = 'www.scixplorer.org'
     path = '/search'
     params = {
         'p': '1',
-        'q': 'bibstem:{0} {1} -has:body -title:(erratum OR editorial) doctype:article'.format(bibstem, year_vol),
+        'q': 'bibstem:{0} {1} {2} -title:(erratum OR editorial OR corrigendum) doctype:article'.format(bibstem, year_vol, query_modifier),
         'sort': ['score desc', 'date desc'], # List handles multiple sort params
         'd': 'general'
     }
@@ -343,7 +344,7 @@ def _create_url(bibstem, year_vol):
     final_url = urlunparse((scheme, netloc, path, '', query_string, ''))
     return final_url
 
-def _add_hyperlinks(filename, sheet_name='Sheet1', threshold=80):
+def _add_hyperlinks(filename, sheet_name='Sheet1', threshold=100, query_modifier='-has:body'):
     """
     Add hyperlinks to coverage spreadsheet for cells with values smaller than a threshold
     
@@ -378,7 +379,7 @@ def _add_hyperlinks(filename, sheet_name='Sheet1', threshold=80):
                 # Try to convert cell value to a number for the condition check
                 cell_value = float(cell.value)
                 # Check if the value is between 0 and threshold (exclusive of 0, inclusive of 60 based on prompt)
-                if 0 < cell_value <= float(threshold):
+                if 0 < cell_value < float(threshold):
                     # Get the corresponding column and row headers
                     col_header = column_headers.get(cell.column_letter, 'N/A')
                     row_header = row_headers.get(cell.row, 'N/A')
@@ -389,7 +390,7 @@ def _add_hyperlinks(filename, sheet_name='Sheet1', threshold=80):
                         else:
                             filter = "volume:{0}".format(row_header)
                         # Assign hyperlink to cell
-                        cell.hyperlink = _create_url(col_header, filter) 
+                        cell.hyperlink = _create_url(col_header, filter, query_modifier)
                         # Apply the standard hyperlink style (blue and underlined)
                         cell.font = Font(color="0000FF", underline="single")
             except (ValueError, TypeError):
